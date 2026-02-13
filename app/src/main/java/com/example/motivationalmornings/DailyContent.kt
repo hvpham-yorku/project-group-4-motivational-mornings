@@ -10,23 +10,33 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun DailyContent(modifier: Modifier = Modifier) {
+fun DailyContent(
+    modifier: Modifier = Modifier,
+    viewModel: DailyContentViewModel = viewModel()
+) {
+    val quote by viewModel.quote.collectAsState()
+    val imageResId by viewModel.imageResId.collectAsState()
+    val intentions by viewModel.intentions.collectAsState()
+
     Column(modifier = modifier.padding(16.dp)) {
-        QuoteOfTheDay()
+        QuoteOfTheDay(quote = quote)
         Spacer(modifier = Modifier.height(16.dp))
-        ImageOfTheDay()
+        ImageOfTheDay(imageResId = imageResId)
         Spacer(modifier = Modifier.height(16.dp))
-        Intentions()
+        Intentions(intentions = intentions)
     }
 }
 
 @Composable
-fun QuoteOfTheDay(modifier: Modifier = Modifier) {
+fun QuoteOfTheDay(modifier: Modifier = Modifier, quote: String) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -35,7 +45,7 @@ fun QuoteOfTheDay(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "\"The best way to predict the future is to create it.\"",
+                text = quote,
                 style = MaterialTheme.typography.bodyLarge
             )
         }
@@ -43,7 +53,7 @@ fun QuoteOfTheDay(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ImageOfTheDay(modifier: Modifier = Modifier) {
+fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -53,7 +63,7 @@ fun ImageOfTheDay(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(8.dp))
             // You can replace this with a real image loader like Coil
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+                painter = painterResource(id = imageResId),
                 contentDescription = "Image of the day placeholder"
             )
         }
@@ -61,7 +71,7 @@ fun ImageOfTheDay(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Intentions(modifier: Modifier = Modifier) {
+fun Intentions(modifier: Modifier = Modifier, intentions: String) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -70,7 +80,7 @@ fun Intentions(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "My intentions for today are...",
+                text = intentions,
                 style = MaterialTheme.typography.bodyLarge
             )
         }
