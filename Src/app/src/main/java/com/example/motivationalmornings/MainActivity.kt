@@ -65,9 +65,18 @@ fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
                     name = "Android",
                     modifier = Modifier.padding(innerPadding)
                 )
-                AppDestinations.DAILY_CONTENT -> DailyContent(modifier = Modifier.padding(innerPadding))
-                AppDestinations.AGGREGATOR -> AggregatorScreen(modifier = Modifier.padding(innerPadding))
-                AppDestinations.RSS_FEED -> RssFeedScreen(modifier = Modifier.padding(innerPadding))
+
+                AppDestinations.DAILY_CONTENT -> DailyContent(
+                    modifier = Modifier.padding(innerPadding)
+                )
+
+                AppDestinations.AGGREGATOR -> AggregatorScreen(
+                    modifier = Modifier.padding(innerPadding)
+                )
+
+                AppDestinations.RSS_FEED -> RssFeedScreen(
+                    modifier = Modifier.padding(innerPadding)
+                )
             }
         }
     }
