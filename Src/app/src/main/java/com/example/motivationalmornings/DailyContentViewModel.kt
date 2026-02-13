@@ -8,8 +8,9 @@ import com.example.motivationalmornings.data.HardcodedContentRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-class DailyContentViewModel(contentRepository: ContentRepository) : ViewModel() {
+class DailyContentViewModel(private val contentRepository: ContentRepository) : ViewModel() {
     val quote: StateFlow<String> = contentRepository.getQuote()
         .stateIn(viewModelScope, SharingStarted.Lazily, "")
 
@@ -18,6 +19,12 @@ class DailyContentViewModel(contentRepository: ContentRepository) : ViewModel() 
 
     val intentions: StateFlow<String> = contentRepository.getIntentions()
         .stateIn(viewModelScope, SharingStarted.Lazily, "")
+
+    fun saveIntention(intention: String) {
+        viewModelScope.launch {
+            contentRepository.saveIntention(intention)
+        }
+    }
 
     companion object {
         fun provideFactory(
