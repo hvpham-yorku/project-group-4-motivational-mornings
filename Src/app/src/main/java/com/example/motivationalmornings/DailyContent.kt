@@ -20,7 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun DailyContent(
     modifier: Modifier = Modifier,
-    viewModel: DailyContentViewModel = viewModel()
+    viewModel: DailyContentViewModel = viewModel(factory = DailyContentViewModel.provideFactory())
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()

@@ -1,16 +1,31 @@
 package com.example.motivationalmornings
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.data.ContentRepository
+import com.example.motivationalmornings.data.HardcodedContentRepository
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 
-class DailyContentViewModel : ViewModel() {
-    private val _quote = MutableStateFlow("\"The best way to predict the future is to create it.\"")
-    val quote: StateFlow<String> = _quote
+class DailyContentViewModel(contentRepository: ContentRepository) : ViewModel() {
+    val quote: StateFlow<String> = contentRepository.getQuote()
+        .stateIn(viewModelScope, SharingStarted.Lazily, "")
 
-    private val _imageResId = MutableStateFlow(R.drawable.ic_launcher_background)
-    val imageResId: StateFlow<Int> = _imageResId
+    val imageResId: StateFlow<Int> = contentRepository.getImageResId()
+        .stateIn(viewModelScope, SharingStarted.Lazily, R.drawable.ic_launcher_background)
 
-    private val _intentions = MutableStateFlow("My intentions for today are...")
-    val intentions: StateFlow<String> = _intentions
+    val intentions: StateFlow<String> = contentRepository.getIntentions()
+        .stateIn(viewModelScope, SharingStarted.Lazily, "")
+
+    companion object {
+        fun provideFactory(
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return DailyContentViewModel(HardcodedContentRepository()) as T
+            }
+        }
+    }
 }
