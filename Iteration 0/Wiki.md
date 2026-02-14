@@ -37,5 +37,6 @@
  	 - In the future other classes will request access to the database through ContentRepository.kt
  	 - Currently it has some methods that just call hard-coded data for other classes
 
-### Tests
-
+## Deployment Guide
+ - This project is an android project and as such that makes running it a bit different. 
+ - Specifically you need to install android studio and then import the project there. Once there you need to hit the green arrow in the top left, or hit "Shift + F10".
