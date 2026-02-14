@@ -3,7 +3,9 @@ package com.example.motivationalmornings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.ContentRepository
+import com.example.motivationalmornings.data.FakeAnalyticsRepository
 import com.example.motivationalmornings.data.HardcodedContentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,7 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class DailyContentViewModel(private val contentRepository: ContentRepository) : ViewModel() {
+class DailyContentViewModel(
+    private val contentRepository: ContentRepository,
+    private val analytics: Analytics
+) : ViewModel() {
 
     val quote: StateFlow<String> = contentRepository.getQuote()
         .stateIn(viewModelScope, SharingStarted.Lazily, "")
@@ -34,6 +39,9 @@ class DailyContentViewModel(private val contentRepository: ContentRepository) : 
 
                 // Also save to repository for persistence
                 contentRepository.saveIntention(intention)
+
+                // Track the analytics event
+                analytics.trackIntentionSet(intention, imageResId.value)
             }
         }
     }
@@ -42,7 +50,12 @@ class DailyContentViewModel(private val contentRepository: ContentRepository) : 
         fun provideFactory(): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return DailyContentViewModel(HardcodedContentRepository()) as T
+                val analyticsRepository = FakeAnalyticsRepository()
+                val analytics = Analytics(analyticsRepository)
+                return DailyContentViewModel(
+                    HardcodedContentRepository(),
+                    analytics
+                ) as T
             }
         }
     }
