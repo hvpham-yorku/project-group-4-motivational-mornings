@@ -54,6 +54,7 @@ fun DailyContent(
                 textFieldValue = "" // Clear field after submit
             }
         )
+        WeatherScreen()
     }
 }
 

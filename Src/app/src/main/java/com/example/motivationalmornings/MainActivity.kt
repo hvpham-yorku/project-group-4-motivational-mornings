@@ -77,9 +77,6 @@ fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
                 AppDestinations.RSS_FEED -> RssFeedScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
-                AppDestinations.WEATHER -> WeatherScreen(
-                    modifier = Modifier.padding(innerPadding)
-                )
 
             }
         }
@@ -94,8 +91,6 @@ enum class AppDestinations(
     DAILY_CONTENT("Daily Content", Icons.Default.DateRange),
     AGGREGATOR("Aggregator", Icons.AutoMirrored.Filled.List),
     RSS_FEED("RSS Feed", Icons.Default.Favorite),
-
-    WEATHER("Weather", Icons.Default.Favorite),
 
 }
 
