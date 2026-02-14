@@ -20,9 +20,19 @@ class HardcodedContentRepository : ContentRepository {
     override fun getQuote(): Flow<String> =
         flowOf("The best way to predict the future is to create it.")
 
-    override fun getImageResId(): Flow<Int> =
-        flowOf(R.drawable.imageotd)
+    override fun getImageResId(): Flow<Int> {
+        val images = listOf(
+            R.drawable.imageotd,
+            R.drawable.imageotd2,
+            R.drawable.imageotd3,
+            R.drawable.imageotd4,
+            R.drawable.imageotd5,
+            R.drawable.imageotd6
+        )
 
+        val dayIndex = (java.time.LocalDate.now().toEpochDay() % images.size).toInt()
+        return flowOf(images[dayIndex])
+    }
     // ✅ Override the INTERFACE FUNCTION (not a property)
     override fun getIntentions(): Flow<List<String>> = _intentionsFlow.asStateFlow()
 
