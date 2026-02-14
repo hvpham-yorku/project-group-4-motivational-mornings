@@ -21,7 +21,7 @@ class HardcodedContentRepository : ContentRepository {
         flowOf("The best way to predict the future is to create it.")
 
     override fun getImageResId(): Flow<Int> =
-        flowOf(R.drawable.ic_launcher_background)
+        flowOf(R.drawable.imageotd)
 
     // ✅ Override the INTERFACE FUNCTION (not a property)
     override fun getIntentions(): Flow<List<String>> = _intentionsFlow.asStateFlow()
