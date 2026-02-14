@@ -1,4 +1,7 @@
 package com.example.motivationalmornings.data.weather
 
-class WeatherInfo {
-}
+data class WeatherInfo(
+    val temperatureC: Double,
+    val windSpeedKmh: Double,
+    val condition: String
+)
