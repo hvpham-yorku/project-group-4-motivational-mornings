@@ -1,6 +1,9 @@
 package com.example.motivationalmornings
 
+import com.example.motivationalmornings.analytics.Analytics
+import com.example.motivationalmornings.data.AnalyticsRepository
 import com.example.motivationalmornings.data.ContentRepository
+import com.example.motivationalmornings.data.IntentionAnalyticsEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -24,12 +27,14 @@ class DailyContentViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRepository: MockContentRepository
     private lateinit var viewModel: DailyContentViewModel
+    private lateinit var mockAnalyticsRepository: MockAnalyticsRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockRepository = MockContentRepository()
-        viewModel = DailyContentViewModel(mockRepository)
+        mockAnalyticsRepository = MockAnalyticsRepository()
+        viewModel = DailyContentViewModel(mockRepository, Analytics(mockAnalyticsRepository))
     }
 
     @After
@@ -236,6 +241,12 @@ class DailyContentViewModelTest {
             val current = _intentions.value.toMutableList()
             current.add(0, intention)
             _intentions.value = current
+        }
+    }
+
+    private class MockAnalyticsRepository : AnalyticsRepository {
+        override suspend fun trackIntentionSet(event: IntentionAnalyticsEvent) {
+            // For now, do nothing
         }
     }
 }
