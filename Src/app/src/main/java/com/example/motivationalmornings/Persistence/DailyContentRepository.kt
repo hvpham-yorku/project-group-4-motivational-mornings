@@ -12,8 +12,16 @@ data class Intention(
     @ColumnInfo(name = "date") val date: String,
 )
 
+data class QuoteOfTheDay(
+    @PrimaryKey val uid: Int,
+    @ColumnInfo(name = "text") val text: String,
+)
+
 @Dao
-interface IntentionDao {
+interface DailyContentDao {
     @Query("SELECT * FROM Intention")
-    fun getAll(): List<Intention>
+    fun getAllIntentions(): List<Intention>
+
+    @Query("SELECT * FROM QuoteOfTheDay")
+    fun getAllQuotes(): List<QuoteOfTheDay>
 }
