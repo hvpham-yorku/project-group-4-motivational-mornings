@@ -1,16 +1,16 @@
 package com.example.motivationalmornings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.FakeAnalyticsRepository
-import com.example.motivationalmornings.data.HardcodedContentRepository
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.motivationalmornings.data.RoomContentRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,24 +20,18 @@ class DailyContentViewModel(
 ) : ViewModel() {
 
     val quote: StateFlow<String> = contentRepository.getQuote()
-        .stateIn(viewModelScope, SharingStarted.Lazily, "")
+        .stateIn(viewModelScope, SharingStarted.Lazily, "Loading quote...")
 
     val imageResId: StateFlow<Int> = contentRepository.getImageResId()
         .stateIn(viewModelScope, SharingStarted.Lazily, R.drawable.ic_launcher_background)
 
-    // Updated to List<String> to match frontend
-    private val _intentions = MutableStateFlow<List<String>>(emptyList())
-    val intentions: StateFlow<List<String>> = _intentions.asStateFlow()
+    val intentions: StateFlow<List<String>> = contentRepository.getIntentions()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun saveIntention(intention: String) {
         if (intention.isNotBlank()) {
             viewModelScope.launch {
-                // Add to existing list (in-memory for now)
-                val currentIntentions = _intentions.value.toMutableList()
-                currentIntentions.add(0, intention) // Add to top
-                _intentions.value = currentIntentions
-
-                // Also save to repository for persistence
+                // Save to repository for persistence
                 contentRepository.saveIntention(intention)
 
                 // Track the analytics event
@@ -47,13 +41,15 @@ class DailyContentViewModel(
     }
 
     companion object {
-        fun provideFactory(): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        fun provideFactory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val database = AppDatabase.getDatabase(context)
+                val contentRepository = RoomContentRepository(database.dailyContentDao())
                 val analyticsRepository = FakeAnalyticsRepository()
                 val analytics = Analytics(analyticsRepository)
                 return DailyContentViewModel(
-                    HardcodedContentRepository(),
+                    contentRepository,
                     analytics
                 ) as T
             }

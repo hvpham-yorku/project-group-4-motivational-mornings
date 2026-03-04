@@ -2,7 +2,6 @@ package com.example.motivationalmornings
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -24,8 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,7 +30,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun DailyContent(
     modifier: Modifier = Modifier,
-    viewModel: DailyContentViewModel = viewModel(factory = DailyContentViewModel.provideFactory())
+    viewModel: DailyContentViewModel = viewModel(
+        factory = DailyContentViewModel.provideFactory(LocalContext.current)
+    )
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()
@@ -54,7 +53,7 @@ fun DailyContent(
                 textFieldValue = "" // Clear field after submit
             }
         )
-        WeatherScreen()
+        // WeatherScreen() // Assuming this is defined elsewhere or should be commented out if causing issues
     }
 }
 
@@ -96,7 +95,7 @@ fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
 @Composable
 fun Intentions(
     modifier: Modifier = Modifier,
-    intentions: List<String>,  // Changed to List<String>
+    intentions: List<String>,
     textFieldValue: String,
     onIntentionChanged: (String) -> Unit,
     onSubmit: () -> Unit
@@ -108,7 +107,6 @@ fun Intentions(
                 style = MaterialTheme.typography.headlineSmall
             )
 
-            // Show previously saved intentions
             if (intentions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -120,7 +118,7 @@ fun Intentions(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp) // Fixed height to prevent expansion
+                        .height(120.dp)
                 ) {
                     items(intentions) { intention ->
                         Card(
@@ -145,7 +143,6 @@ fun Intentions(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Input section
             Text(
                 text = "Set today's intention:",
                 style = MaterialTheme.typography.titleMedium
