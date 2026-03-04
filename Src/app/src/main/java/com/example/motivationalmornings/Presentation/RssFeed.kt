@@ -1,8 +1,9 @@
 package com.example.motivationalmornings
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,14 +11,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.motivationalmornings.BusinessLogic.RssFeedViewModel
+import com.example.motivationalmornings.BusinessLogic.RssItem
 
 @Composable
 fun RssFeedScreen(
@@ -25,19 +30,25 @@ fun RssFeedScreen(
     viewModel: RssFeedViewModel = viewModel()
 ) {
     val rssItems by viewModel.rssItems.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(rssItems) { item ->
-            RssItemCard(
-                item = item,
-                onClick = {
-                    // Later: open link in CustomTab/Browser or navigate to detail screen
-                    // For now this is just a stub
+    Box(modifier = modifier.fillMaxSize()) {
+        if (isLoading && rssItems.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                items(rssItems) { item ->
+                    RssItemCard(
+                        item = item,
+                        onClick = {
+                            // Later: open link in CustomTab/Browser or navigate to detail screen
+                        }
+                    )
                 }
-            )
+            }
         }
     }
 }
@@ -66,7 +77,7 @@ fun RssItemCard(
                 modifier = Modifier.padding(top = 4.dp)
             )
             Text(
-                text = item.link,
+                text = item.pubDate,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )
