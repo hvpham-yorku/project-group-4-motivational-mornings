@@ -24,7 +24,7 @@ class RoomContentRepository(
 ) : ContentRepository {
 
     override fun getQuote(): Flow<String> =
-        dailyContentDao.getLatestQuote().map { it ?: "The best way to predict the future is to create it." }
+        dailyContentDao.getRandomQuote().map { it ?: "The best way to predict the future is to create it." }
 
     override fun getImageResId(): Flow<Int> {
         val images = listOf(

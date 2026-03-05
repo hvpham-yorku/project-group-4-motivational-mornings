@@ -10,7 +10,11 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 @Entity(tableName = "intentions")
 data class Intention(
@@ -30,8 +34,8 @@ interface DailyContentDao {
     @Query("SELECT text FROM intentions WHERE date = :date ORDER BY uid DESC")
     fun getIntentionsByDate(date: String): Flow<List<String>>
 
-    @Query("SELECT text FROM quotes ORDER BY uid DESC LIMIT 1")
-    fun getLatestQuote(): Flow<String?>
+    @Query("SELECT text FROM quotes ORDER BY RANDOM() LIMIT 1")
+    fun getRandomQuote(): Flow<String?>
 
     @Insert
     suspend fun insertIntention(intention: Intention)
@@ -54,7 +58,28 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "motivational_mornings_db"
-                ).build()
+                )
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            CoroutineScope(Dispatchers.IO).launch {
+                                INSTANCE?.let { database ->
+                                    val dao = database.dailyContentDao()
+                                    val defaultQuotes = listOf(
+                                        "The best way to predict the future is to create it.",
+                                        "Every morning is a new opportunity to become a better version of yourself.",
+                                        "Small steps every day lead to big changes.",
+                                        "You are capable of amazing things today.",
+                                        "Start where you are. Use what you have. Do what you can."
+                                    )
+                                    defaultQuotes.forEach { text ->
+                                        dao.insertQuote(QuoteOfTheDay(text = text))
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    .build()
                 INSTANCE = instance
                 instance
             }
