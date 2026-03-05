@@ -40,6 +40,14 @@ class DailyContentViewModel(
         }
     }
 
+    fun saveQuote(newQuote: String) {
+        if (newQuote.isNotBlank()) {
+            viewModelScope.launch {
+                contentRepository.saveQuote(newQuote)
+            }
+        }
+    }
+
     companion object {
         fun provideFactory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")

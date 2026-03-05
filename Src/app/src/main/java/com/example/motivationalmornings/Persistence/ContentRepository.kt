@@ -2,6 +2,7 @@ package com.example.motivationalmornings.data
 
 import com.example.motivationalmornings.Persistence.DailyContentDao
 import com.example.motivationalmornings.Persistence.Intention
+import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ interface ContentRepository {
     fun getImageResId(): Flow<Int>
     fun getIntentions(): Flow<List<String>>
     suspend fun saveIntention(intention: String)
+    suspend fun saveQuote(quote: String)
 }
 
 class RoomContentRepository(
@@ -38,7 +40,8 @@ class RoomContentRepository(
         return flowOf(images[dayIndex])
     }
 
-    override fun getIntentions(): Flow<List<String>> = dailyContentDao.getAllIntentions()
+    override fun getIntentions(): Flow<List<String>> =
+        dailyContentDao.getIntentionsByDate(LocalDate.now().toString())
 
     override suspend fun saveIntention(intention: String) {
         if (intention.isNotBlank()) {
@@ -47,13 +50,19 @@ class RoomContentRepository(
             )
         }
     }
+
+    override suspend fun saveQuote(quote: String) {
+        if (quote.isNotBlank()) {
+            dailyContentDao.insertQuote(QuoteOfTheDay(text = quote))
+        }
+    }
 }
 
 class HardcodedContentRepository : ContentRepository {
     private val _intentionsFlow = MutableStateFlow<List<String>>(emptyList())
+    private val _quoteFlow = MutableStateFlow("The best way to predict the future is to create it.")
 
-    override fun getQuote(): Flow<String> =
-        flowOf("The best way to predict the future is to create it.")
+    override fun getQuote(): Flow<String> = _quoteFlow.asStateFlow()
 
     override fun getImageResId(): Flow<Int> {
         val images = listOf(
@@ -76,6 +85,12 @@ class HardcodedContentRepository : ContentRepository {
             val currentIntentions = _intentionsFlow.value.toMutableList()
             currentIntentions.add(0, intention)
             _intentionsFlow.value = currentIntentions
+        }
+    }
+
+    override suspend fun saveQuote(quote: String) {
+        if (quote.isNotBlank()) {
+            _quoteFlow.value = quote
         }
     }
 }

@@ -27,8 +27,8 @@ data class QuoteOfTheDay(
 
 @Dao
 interface DailyContentDao {
-    @Query("SELECT text FROM intentions ORDER BY uid DESC")
-    fun getAllIntentions(): Flow<List<String>>
+    @Query("SELECT text FROM intentions WHERE date = :date ORDER BY uid DESC")
+    fun getIntentionsByDate(date: String): Flow<List<String>>
 
     @Query("SELECT text FROM quotes ORDER BY uid DESC LIMIT 1")
     fun getLatestQuote(): Flow<String?>
