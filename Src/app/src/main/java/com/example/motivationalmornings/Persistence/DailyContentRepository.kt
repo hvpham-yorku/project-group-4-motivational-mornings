@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.Delete
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,11 +38,17 @@ interface DailyContentDao {
     @Query("SELECT text FROM quotes ORDER BY RANDOM() LIMIT 1")
     fun getRandomQuote(): Flow<String?>
 
+    @Query("SELECT * FROM quotes ORDER BY uid DESC")
+    fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
+
     @Insert
     suspend fun insertIntention(intention: Intention)
 
     @Insert
     suspend fun insertQuote(quote: QuoteOfTheDay)
+
+    @Delete
+    suspend fun deleteQuote(quote: QuoteOfTheDay)
 }
 
 @Database(entities = [Intention::class, QuoteOfTheDay::class], version = 1)

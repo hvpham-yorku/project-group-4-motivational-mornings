@@ -17,6 +17,8 @@ interface ContentRepository {
     fun getIntentions(): Flow<List<String>>
     suspend fun saveIntention(intention: String)
     suspend fun saveQuote(quote: String)
+    fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
+    suspend fun deleteQuote(quote: QuoteOfTheDay)
 }
 
 class RoomContentRepository(
@@ -56,11 +58,19 @@ class RoomContentRepository(
             dailyContentDao.insertQuote(QuoteOfTheDay(text = quote))
         }
     }
+
+    override fun getAllQuotes(): Flow<List<QuoteOfTheDay>> =
+        dailyContentDao.getAllQuotes()
+
+    override suspend fun deleteQuote(quote: QuoteOfTheDay) {
+        dailyContentDao.deleteQuote(quote)
+    }
 }
 
 class HardcodedContentRepository : ContentRepository {
     private val _intentionsFlow = MutableStateFlow<List<String>>(emptyList())
     private val _quoteFlow = MutableStateFlow("The best way to predict the future is to create it.")
+    private val _quotesFlow = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
 
     override fun getQuote(): Flow<String> = _quoteFlow.asStateFlow()
 
@@ -91,6 +101,18 @@ class HardcodedContentRepository : ContentRepository {
     override suspend fun saveQuote(quote: String) {
         if (quote.isNotBlank()) {
             _quoteFlow.value = quote
+            val currentQuotes = _quotesFlow.value.toMutableList()
+            val nextId = (currentQuotes.maxOfOrNull { it.uid } ?: 0) + 1
+            currentQuotes.add(0, QuoteOfTheDay(uid = nextId, text = quote))
+            _quotesFlow.value = currentQuotes
         }
+    }
+
+    override fun getAllQuotes(): Flow<List<QuoteOfTheDay>> = _quotesFlow.asStateFlow()
+
+    override suspend fun deleteQuote(quote: QuoteOfTheDay) {
+        val currentQuotes = _quotesFlow.value.toMutableList()
+        currentQuotes.removeAll { it.uid == quote.uid }
+        _quotesFlow.value = currentQuotes
     }
 }

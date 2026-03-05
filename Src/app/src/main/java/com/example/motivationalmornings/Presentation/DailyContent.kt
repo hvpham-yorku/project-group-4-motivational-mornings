@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -39,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 
 @Composable
 fun DailyContent(
@@ -50,8 +52,10 @@ fun DailyContent(
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()
     val savedIntentions by viewModel.intentions.collectAsState()
+    val allQuotes by viewModel.allQuotes.collectAsState()
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
+    var showManageQuotesDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -60,7 +64,8 @@ fun DailyContent(
     ) {
         QuoteOfTheDay(
             quote = quote,
-            onAddQuoteClick = { showAddQuoteDialog = true }
+            onAddQuoteClick = { showAddQuoteDialog = true },
+            onManageQuotesClick = { showManageQuotesDialog = true }
         )
         Spacer(modifier = Modifier.height(16.dp))
         ImageOfTheDay(imageResId = imageResId)
@@ -85,13 +90,24 @@ fun DailyContent(
             }
         )
     }
+
+    if (showManageQuotesDialog) {
+        ManageQuotesDialog(
+            quotes = allQuotes,
+            onDismiss = { showManageQuotesDialog = false },
+            onDeleteQuote = { quote ->
+                viewModel.deleteQuote(quote)
+            }
+        )
+    }
 }
 
 @Composable
 fun QuoteOfTheDay(
     modifier: Modifier = Modifier,
     quote: String,
-    onAddQuoteClick: () -> Unit
+    onAddQuoteClick: () -> Unit,
+    onManageQuotesClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -119,6 +135,13 @@ fun QuoteOfTheDay(
                             onClick = {
                                 expanded = false
                                 onAddQuoteClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("View all quotes") },
+                            onClick = {
+                                expanded = false
+                                onManageQuotesClick()
                             }
                         )
                     }
@@ -162,6 +185,58 @@ fun AddQuoteDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun ManageQuotesDialog(
+    quotes: List<QuoteOfTheDay>,
+    onDismiss: () -> Unit,
+    onDeleteQuote: (QuoteOfTheDay) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Manage Quotes") },
+        text = {
+            if (quotes.isEmpty()) {
+                Text("No quotes saved yet.")
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    items(quotes) { quote ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = quote.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                            )
+                            IconButton(onClick = { onDeleteQuote(quote) }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = "Delete quote"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
             }
         }
     )

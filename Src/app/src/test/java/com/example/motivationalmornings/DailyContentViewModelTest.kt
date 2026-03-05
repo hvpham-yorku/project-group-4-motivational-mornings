@@ -4,6 +4,7 @@ import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.AnalyticsRepository
 import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.IntentionAnalyticsEvent
+import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -229,6 +230,7 @@ class DailyContentViewModelTest {
     private class MockContentRepository : ContentRepository {
         val savedIntentions = mutableListOf<String>()
         private val _intentions = MutableStateFlow<List<String>>(emptyList())
+        private val _quotes = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
 
         override fun getQuote(): Flow<String> = flowOf("Test quote from repository")
 
@@ -241,6 +243,21 @@ class DailyContentViewModelTest {
             val current = _intentions.value.toMutableList()
             current.add(0, intention)
             _intentions.value = current
+        }
+
+        override suspend fun saveQuote(quote: String) {
+            val currentQuotes = _quotes.value.toMutableList()
+            val nextId = (currentQuotes.maxOfOrNull { it.uid } ?: 0) + 1
+            currentQuotes.add(0, QuoteOfTheDay(uid = nextId, text = quote))
+            _quotes.value = currentQuotes
+        }
+
+        override fun getAllQuotes(): Flow<List<QuoteOfTheDay>> = _quotes
+
+        override suspend fun deleteQuote(quote: QuoteOfTheDay) {
+            val currentQuotes = _quotes.value.toMutableList()
+            currentQuotes.removeAll { it.uid == quote.uid }
+            _quotes.value = currentQuotes
         }
     }
 
