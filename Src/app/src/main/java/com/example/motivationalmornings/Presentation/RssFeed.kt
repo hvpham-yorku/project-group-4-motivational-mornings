@@ -18,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.motivationalmornings.BusinessLogic.RssFeedViewModel
+import com.example.motivationalmornings.Persistence.RssItem
 
 @Composable
 fun RssFeedScreen(
