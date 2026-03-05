@@ -14,11 +14,22 @@ class RssFeedViewModel(
     private val _rssItems = MutableStateFlow<List<RssItem>>(emptyList())
     val rssItems: StateFlow<List<RssItem>> = _rssItems.asStateFlow()
 
+    private val _currentFeedUrl = MutableStateFlow(DEFAULT_FEED_URL)
+    val currentFeedUrl: StateFlow<String> = _currentFeedUrl.asStateFlow()
+
     init {
-        loadFeed()
+        loadFeed(DEFAULT_FEED_URL)
     }
 
-    private fun loadFeed() {
-        _rssItems.value = repository.getRssItems()
+    fun onFeedUrlChanged(newUrl: String) {
+        _currentFeedUrl.value = newUrl
+    }
+
+    fun loadFeed(feedUrl: String = _currentFeedUrl.value) {
+        _rssItems.value = repository.getRssItems(feedUrl)
+    }
+
+    companion object {
+        private const val DEFAULT_FEED_URL = "https://example.com/feed"
     }
 }

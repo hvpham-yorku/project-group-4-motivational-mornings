@@ -22,5 +22,9 @@ class RssRepository {
         )
     )
 
-    fun getRssItems(): List<RssItem> = dummyItems
+    fun getRssItems(feedUrl: String): List<RssItem> {
+        // For now this repository returns static data and ignores the feedUrl.
+        // Later this can be expanded to fetch and parse a real RSS feed.
+        return dummyItems
+    }
 }
