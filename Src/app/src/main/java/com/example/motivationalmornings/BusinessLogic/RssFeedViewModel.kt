@@ -1,11 +1,15 @@
 package com.example.motivationalmornings.BusinessLogic
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.motivationalmornings.Persistence.RssItem
 import com.example.motivationalmornings.Persistence.RssRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RssFeedViewModel(
     private val repository: RssRepository = RssRepository()
@@ -26,7 +30,12 @@ class RssFeedViewModel(
     }
 
     fun loadFeed(feedUrl: String = _currentFeedUrl.value) {
-        _rssItems.value = repository.getRssItems(feedUrl)
+        viewModelScope.launch {
+            val items = withContext(Dispatchers.IO) {
+                repository.getRssItems(feedUrl)
+            }
+            _rssItems.value = items
+        }
     }
 
     companion object {
