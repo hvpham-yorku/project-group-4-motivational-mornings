@@ -16,6 +16,7 @@ data class RssItem(
 class RssRepository {
 
     // Hardcoded list can be later replace with a real DB or network
+    // TODO: Determine have a switch somewhere that lets you go between this dummy data and the actual RSS content
     private val allItems = listOf(
         RssItem(
             id = 1,
@@ -37,7 +38,6 @@ class RssRepository {
         )
     )
 
-    // Track subscribed items (starts with all items subscribed)
     private val _subscribedItems = MutableStateFlow(allItems)
     val subscribedItems: StateFlow<List<RssItem>> = _subscribedItems.asStateFlow()
 

@@ -6,14 +6,13 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
+// TODO: Save the URL to a database when it is submitted by the user
 open class RssRepository {
 
     open fun getRssItems(feedUrl: String): List<RssItem> {
         val trimmedUrl = feedUrl.trim()
         if (trimmedUrl.isEmpty()) return emptyList()
 
-        // Normalize the URL so that common RSS feed formats such as ".rss" and
-        // ".xml" work reliably, and prefer HTTPS for Android network security.
         val normalizedUrl = when {
             trimmedUrl.startsWith("https://", ignoreCase = true) -> trimmedUrl
             trimmedUrl.startsWith("http://", ignoreCase = true) ->
@@ -86,7 +85,6 @@ open class RssRepository {
                             }
 
                             name.equals("link", ignoreCase = true) -> {
-                                // RSS: text content, Atom: href attribute
                                 val href = parser.getAttributeValue(null, "href")
                                 currentLink = href ?: parser.nextText().orEmpty()
                             }
