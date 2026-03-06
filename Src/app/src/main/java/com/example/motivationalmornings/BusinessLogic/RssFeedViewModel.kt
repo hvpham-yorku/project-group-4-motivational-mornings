@@ -1,4 +1,4 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.BusinessLogic
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
