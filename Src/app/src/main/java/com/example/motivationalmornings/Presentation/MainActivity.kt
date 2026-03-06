@@ -1,4 +1,4 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.Presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.motivationalmornings.MainViewModel
 import com.example.motivationalmornings.ui.theme.MotivationalMorningsTheme
 
 class MainActivity : ComponentActivity() {
