@@ -12,8 +12,17 @@ open class RssRepository {
         val trimmedUrl = feedUrl.trim()
         if (trimmedUrl.isEmpty()) return emptyList()
 
+        // Normalize the URL so that common RSS feed formats such as ".rss" and
+        // ".xml" work reliably, and prefer HTTPS for Android network security.
+        val normalizedUrl = when {
+            trimmedUrl.startsWith("https://", ignoreCase = true) -> trimmedUrl
+            trimmedUrl.startsWith("http://", ignoreCase = true) ->
+                "https://" + trimmedUrl.removePrefix("http://")
+            else -> "https://$trimmedUrl"
+        }
+
         return try {
-            val url = URL(trimmedUrl)
+            val url = URL(normalizedUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 10_000
