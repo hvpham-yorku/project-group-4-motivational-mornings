@@ -19,26 +19,33 @@
  - WeatherScreen.kt
 	 - The card to display the weather
 
-### Backend
+### Business Logic
  - AggregatorViewModel.kt
  	 - The backend for the aggregator
  - DailyContentViewModel.kt
  	 - The backend for the daily content
- 	 - Hooks up to the ContentRepository.kt (which is currently just a dummy database that has hard-coded values)
+ 	 - Hooks up to the ContentRepository.kt
  	 - Retrieves the quote and image from ContentRepository.kt
- 	 - Sends a request to save the intentions to ContentRepository.kt and saves the intention to the program memory (in the future it won't save to memory, it will just save to a database through ContentRepository.kt)
+ 	 - Sends a request to save the intentions to DailyContentRepository.kt
  - MainViewModel.kt
  	 - The backend for the "Main" activity
  	 - Handles the switching between the various other features (i.e. to Daily Content)
  - RssFeedViewModel.kt
  	 - Handles the backend for the RSS feed
  	 - Has hard-coded feed items, in the future will pull feed items from the database using the ContentRepository.kt
+ - WeatherViewModel.kt
+	 - Backend for the Weather sub-feature
 
-### Database
+### Persistence
+ - AnalyticsRepository.kt
+	 - Stub file for when the analytics is implemented in the next iteration
  - ContentRepository.kt
- 	 - Handles the connection to the database
- 	 - In the future other classes will request access to the database through ContentRepository.kt
- 	 - Currently it has some methods that just call hard-coded data for other classes
+ 	 - Old file with the dummy database
+	 - The interface is used in the actual implementation
+ - RssItem.kt
+	 - Data class for RSS
+ - RssRepository
+	 - Database connector and url handler for RSS feature
 
 ## Deployment Guide
  - This project is an android project and as such that makes running it a bit different. 
