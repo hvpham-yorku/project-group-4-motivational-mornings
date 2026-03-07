@@ -24,3 +24,13 @@
  - Jordi: Do image of the day and intentions
  - Arsh: Do weather
  - Hassan: Complete drafts for all the major components
+ 
+ ## Monday February 23rd
+ - Planning for sprint 2
+ - Started sprint 2
+ - Jordi: Allow user to subscribe to RSS feed, implement backend for daily content
+ - Arsh: Allow user to see RSS feed
+ - Hassan: Allow user to unsubscribe from RSS content, allow user to view RSS feeds
+ 
+ ## Monday March 2nd
+ - Discussed progress in sprint 2

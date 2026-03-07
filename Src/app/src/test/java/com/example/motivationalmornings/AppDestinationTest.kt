@@ -1,5 +1,6 @@
 package com.example.motivationalmornings
 
+import com.example.motivationalmornings.Presentation.AppDestinations
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange

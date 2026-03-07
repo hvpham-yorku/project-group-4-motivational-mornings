@@ -9,6 +9,7 @@ import com.example.motivationalmornings.Persistence.DailyContentDao
 import com.example.motivationalmornings.Persistence.RssFeedUrl
 import com.example.motivationalmornings.Persistence.RssItem
 import com.example.motivationalmornings.Persistence.RssRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.withContext
 
 class RssFeedViewModel(
     private val repository: RssRepository = RssRepository(),
-    private val dailyContentDao: DailyContentDao? = null
+    private val dailyContentDao: DailyContentDao? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _rssItems = MutableStateFlow<List<RssItem>>(emptyList())
@@ -49,7 +51,7 @@ class RssFeedViewModel(
         val url = _currentFeedUrl.value.trim()
         if (url.isEmpty() || _subscribedFeeds.value.contains(url)) return
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 dailyContentDao?.insertRssFeedUrl(RssFeedUrl(url = url))
             }
             _subscribedFeeds.value = _subscribedFeeds.value + url
@@ -60,7 +62,7 @@ class RssFeedViewModel(
 
     fun loadFeed(feedUrl: String) {
         viewModelScope.launch {
-            val items = withContext(Dispatchers.IO) {
+            val items = withContext(ioDispatcher) {
                 repository.getRssItems(feedUrl)
             }
             _rssItems.value = items

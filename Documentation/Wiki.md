@@ -39,4 +39,8 @@
 
 ## Deployment Guide
  - This project is an android project and as such that makes running it a bit different. 
- - Specifically you need to install android studio and then import the project there. Once there you need to hit the green arrow in the top left, or hit "Shift + F10".
+ - Specifically you need to install android studio and then import the project there
+  - The "Src" folder must be imported as the project, otherwise android studio might have a hard time detecting it
+  - Once there you need to hit the green arrow in the top left, or hit "Shift + F10"
+  - If there are issues with running the project try syncing it first, as there might be an issue with the dependencies
+  - If there are further issues try "cold booting" the android emulator. This can be done by selecting "Device Manager" from the toolbar on the right hand side, clicking the triple-dot menu next to the device you want to run, and then selecting "Cold Boot"
