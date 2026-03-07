@@ -63,6 +63,9 @@ interface DailyContentDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertRssFeedUrl(rssFeedUrl: RssFeedUrl)
+
+    @Query("DELETE FROM rss_feed_urls WHERE url = :url")
+    suspend fun deleteRssFeedUrl(url: String)
 }
 
 @Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 2)

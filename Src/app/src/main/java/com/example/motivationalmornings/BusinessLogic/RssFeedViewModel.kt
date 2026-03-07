@@ -69,6 +69,15 @@ class RssFeedViewModel(
         }
     }
 
+    fun unsubscribeFromFeed(url: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                dailyContentDao?.deleteRssFeedUrl(url)
+            }
+            _subscribedFeeds.value = _subscribedFeeds.value.filter { it != url }
+        }
+    }
+
     companion object {
         private const val DEFAULT_FEED_URL = "https://example.com/feed"
 
