@@ -6,7 +6,6 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-// TODO: Save the URL to a database when it is submitted by the user
 open class RssRepository {
 
     open fun getRssItems(feedUrl: String): List<RssItem> {

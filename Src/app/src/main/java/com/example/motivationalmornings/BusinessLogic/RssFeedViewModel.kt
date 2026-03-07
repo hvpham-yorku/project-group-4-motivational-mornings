@@ -1,18 +1,25 @@
 package com.example.motivationalmornings.BusinessLogic
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.DailyContentDao
+import com.example.motivationalmornings.Persistence.RssFeedUrl
 import com.example.motivationalmornings.Persistence.RssItem
 import com.example.motivationalmornings.Persistence.RssRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class RssFeedViewModel(
-    private val repository: RssRepository = RssRepository()
+    private val repository: RssRepository = RssRepository(),
+    private val dailyContentDao: DailyContentDao? = null
 ) : ViewModel() {
 
     private val _rssItems = MutableStateFlow<List<RssItem>>(emptyList())
@@ -25,7 +32,13 @@ class RssFeedViewModel(
     val subscribedFeeds: StateFlow<List<String>> = _subscribedFeeds.asStateFlow()
 
     init {
-        // Optionally load a default if needed, but starting empty as requested for "adding"
+        dailyContentDao?.let { dao ->
+            viewModelScope.launch {
+                dao.getRssFeedUrls()
+                    .catch { }
+                    .collect { urls -> _subscribedFeeds.value = urls }
+            }
+        }
     }
 
     fun onFeedUrlChanged(newUrl: String) {
@@ -34,7 +47,11 @@ class RssFeedViewModel(
 
     fun subscribeToFeed() {
         val url = _currentFeedUrl.value.trim()
-        if (url.isNotEmpty() && !_subscribedFeeds.value.contains(url)) {
+        if (url.isEmpty() || _subscribedFeeds.value.contains(url)) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                dailyContentDao?.insertRssFeedUrl(RssFeedUrl(url = url))
+            }
             _subscribedFeeds.value = _subscribedFeeds.value + url
             loadFeed(url)
             _currentFeedUrl.value = "" // Clear input after subscribing
@@ -52,5 +69,17 @@ class RssFeedViewModel(
 
     companion object {
         private const val DEFAULT_FEED_URL = "https://example.com/feed"
+
+        fun provideFactory(context: Context): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    val database = AppDatabase.getDatabase(context)
+                    return RssFeedViewModel(
+                        repository = RssRepository(),
+                        dailyContentDao = database.dailyContentDao()
+                    ) as T
+                }
+            }
     }
 }

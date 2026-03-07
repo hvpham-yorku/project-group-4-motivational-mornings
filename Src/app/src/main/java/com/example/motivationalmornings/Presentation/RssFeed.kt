@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,7 +31,9 @@ import com.example.motivationalmornings.Persistence.RssItem
 @Composable
 fun RssFeedScreen(
     modifier: Modifier = Modifier,
-    viewModel: RssFeedViewModel = viewModel()
+    viewModel: RssFeedViewModel = viewModel(
+        factory = RssFeedViewModel.provideFactory(LocalContext.current)
+    )
 ) {
     val rssItems by viewModel.rssItems.collectAsState()
     val currentFeedUrl by viewModel.currentFeedUrl.collectAsState()

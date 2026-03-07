@@ -6,11 +6,13 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Delete
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +30,12 @@ data class Intention(
 data class QuoteOfTheDay(
     @PrimaryKey(autoGenerate = true) val uid: Int = 0,
     @ColumnInfo(name = "text") val text: String,
+)
+
+@Entity(tableName = "rss_feed_urls")
+data class RssFeedUrl(
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+    @ColumnInfo(name = "url") val url: String,
 )
 
 @Dao
@@ -49,15 +57,29 @@ interface DailyContentDao {
 
     @Delete
     suspend fun deleteQuote(quote: QuoteOfTheDay)
+
+    @Query("SELECT url FROM rss_feed_urls ORDER BY uid ASC")
+    fun getRssFeedUrls(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertRssFeedUrl(rssFeedUrl: RssFeedUrl)
 }
 
-@Database(entities = [Intention::class, QuoteOfTheDay::class], version = 1)
+@Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyContentDao(): DailyContentDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS rss_feed_urls (uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL)"
+                )
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -66,6 +88,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "motivational_mornings_db"
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
