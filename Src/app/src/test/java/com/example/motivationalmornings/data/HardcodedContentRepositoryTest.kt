@@ -41,18 +41,21 @@ class HardcodedContentRepositoryTest {
     }
 
     @Test
-    fun getAllQuotes_initialEmpty() = runTest {
+    fun getAllQuotes_initialDefaultContent() = runTest {
         val repo = HardcodedContentRepository()
-        assertTrue(repo.getAllQuotes().first().isEmpty())
+        val quotes = repo.getAllQuotes().first()
+        assertEquals(5, quotes.size)
+        assertEquals("The best way to predict the future is to create it.", quotes[0].text)
     }
 
     @Test
     fun saveQuote_updatesQuoteAndAddsToAllQuotes() = runTest {
         val repo = HardcodedContentRepository()
+        val initialCount = repo.getAllQuotes().first().size
         repo.saveQuote("New quote text")
         assertEquals("New quote text", repo.getQuote().first())
         val allQuotes = repo.getAllQuotes().first()
-        assertEquals(1, allQuotes.size)
+        assertEquals(initialCount + 1, allQuotes.size)
         assertEquals("New quote text", allQuotes[0].text)
     }
 
@@ -62,10 +65,10 @@ class HardcodedContentRepositoryTest {
         repo.saveQuote("First")
         repo.saveQuote("Second")
         val quotes = repo.getAllQuotes().first()
-        assertEquals(2, quotes.size)
+        val countBeforeDelete = quotes.size
         repo.deleteQuote(quotes[1])
         val afterDelete = repo.getAllQuotes().first()
-        assertEquals(1, afterDelete.size)
+        assertEquals(countBeforeDelete - 1, afterDelete.size)
         assertEquals("Second", afterDelete[0].text)
     }
 }

@@ -9,6 +9,7 @@ import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.FakeAnalyticsRepository
+import com.example.motivationalmornings.data.HardcodedContentRepository
 import com.example.motivationalmornings.data.RoomContentRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -62,8 +63,11 @@ class DailyContentViewModel(
         fun provideFactory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val database = AppDatabase.getDatabase(context)
-                val contentRepository = RoomContentRepository(database.dailyContentDao())
+                val contentRepository: ContentRepository = if (DatabaseConfig.USE_REAL_DATABASE) {
+                    RoomContentRepository(AppDatabase.getDatabase(context).dailyContentDao())
+                } else {
+                    HardcodedContentRepository()
+                }
                 val analyticsRepository = FakeAnalyticsRepository()
                 val analytics = Analytics(analyticsRepository)
                 return DailyContentViewModel(

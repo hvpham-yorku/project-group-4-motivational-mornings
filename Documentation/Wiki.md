@@ -1,5 +1,12 @@
 # EECS 2311 Project Group 4: Motivational Mornings
 
+## ITR2 Highlights
+
+- **Persistent storage**: Room (SQLite) in `Persistence/DailyContentRepository.kt`; `ContentRepository` interface with `RoomContentRepository` (real DB) and `HardcodedContentRepository` (stub). Switch via `DatabaseConfig.USE_REAL_DATABASE` (single-line change).
+- **Default content**: Same five default quotes in both the database (on create) and the stub (`ContentRepository.kt`).
+- **Testing**: Unit tests in `src/test` (including `unit/` package); integration tests for persistence (actual Room DB) in `src/androidTest/java/.../integration/ContentRepositoryIntegrationTest.kt`.
+- **Database**: See `database/README.md` for schema and setup.
+
 ## Major Source Code Files
 
 ### Presentation
@@ -40,8 +47,11 @@
  - AnalyticsRepository.kt
 	 - Stub file for when the analytics is implemented in the next iteration
  - ContentRepository.kt
- 	 - Old file with the dummy database
-	 - The interface is used in the actual implementation
+ 	 - Interface for daily content; implementations: RoomContentRepository (real DB) and HardcodedContentRepository (stub). Same default content in both.
+ - DailyContentRepository.kt
+ 	 - Room database, DAO, and entities (Intention, QuoteOfTheDay, RssFeedUrl).
+ - DatabaseConfig.kt
+ 	 - Single-line switch USE_REAL_DATABASE to choose real DB vs stub.
  - RssItem.kt
 	 - Data class for RSS
  - RssRepository

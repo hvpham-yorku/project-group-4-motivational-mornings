@@ -67,10 +67,21 @@ class RoomContentRepository(
     }
 }
 
+/** Default content shared with Room DB (ITR2: same content in stub and database). */
+private val DEFAULT_QUOTES = listOf(
+    "The best way to predict the future is to create it.",
+    "Every morning is a new opportunity to become a better version of yourself.",
+    "Small steps every day lead to big changes.",
+    "You are capable of amazing things today.",
+    "Start where you are. Use what you have. Do what you can."
+)
+
 class HardcodedContentRepository : ContentRepository {
     private val _intentionsFlow = MutableStateFlow<List<String>>(emptyList())
-    private val _quoteFlow = MutableStateFlow("The best way to predict the future is to create it.")
-    private val _quotesFlow = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
+    private val _quotesFlow = MutableStateFlow<List<QuoteOfTheDay>>(
+        DEFAULT_QUOTES.mapIndexed { index, text -> QuoteOfTheDay(uid = index + 1, text = text) }
+    )
+    private val _quoteFlow = MutableStateFlow(DEFAULT_QUOTES.first())
 
     override fun getQuote(): Flow<String> = _quoteFlow.asStateFlow()
 
