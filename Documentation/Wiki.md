@@ -2,11 +2,11 @@
 
 ## Major Source Code Files
 
-### Frontend
+### Presentation
  - Aggregator.kt
  	 - The frontend for the aggregator
  - DailyContent.kt
- 	 - The frontend for the daily content.
+ 	 - The frontend for the daily content
  	 - Has a spot to display the quote of the day, image of the day, and the intentions feature
  	 - Intentions feature contains a textbox to input the intention, and a submit button
  - MainActivity.kt
@@ -14,7 +14,10 @@
  	 - Operates effectively as a homepage
  - RssFeed.kt
  	 - The frontend for the RSS feed
- 	 - Currently has some dummy RSS items to demonstrate how the feed would work
+	 - Has a textbox for the user to input a link to an RSS feed they want to subscribe to
+	 - Displays the RSS feeds the user is subscribed to in a horizontal list that the user can scroll horizontally through
+ - WeatherScreen.kt
+	 - The card to display the weather
 
 ### Backend
  - AggregatorViewModel.kt
@@ -40,7 +43,6 @@
 ## Deployment Guide
  - This project is an android project and as such that makes running it a bit different. 
  - Specifically you need to install android studio and then import the project there
-  - The "Src" folder must be imported as the project, otherwise android studio might have a hard time detecting it
-  - Once there you need to hit the green arrow in the top left, or hit "Shift + F10"
-  - If there are issues with running the project try syncing it first, as there might be an issue with the dependencies
-  - If there are further issues try "cold booting" the android emulator. This can be done by selecting "Device Manager" from the toolbar on the right hand side, clicking the triple-dot menu next to the device you want to run, and then selecting "Cold Boot"
+	 - The "Src" folder must be imported as the project, otherwise android studio might have a hard time detecting it
+	 - Once there you need to hit the green arrow in the top left, or hit "Shift + F10"  - If there are issues with running the project try syncing it first, as there might be an issue with the dependencies
+	 - If there are further issues try "cold booting" the android emulator. This can be done by selecting "Device Manager" from the toolbar on the right hand side, clicking the triple-dot menu next to the device you want to run, and then selecting "Cold Boot"

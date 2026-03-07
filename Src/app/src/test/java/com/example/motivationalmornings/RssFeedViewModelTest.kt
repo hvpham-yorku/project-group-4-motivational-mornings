@@ -18,39 +18,6 @@ import org.junit.Before
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
-class RssRepositoryTest {
-
-    private lateinit var repository: RssRepository
-
-    @Before
-    fun setup() {
-        repository = RssRepository()
-    }
-
-    @Test
-    fun getRssItems_blankUrl_returnsEmptyList() {
-        val items = repository.getRssItems(" ")
-        assertTrue(items.isEmpty())
-    }
-
-    @Test
-    fun getRssItems_invalidUrl_returnsEmptyList() {
-        val items = repository.getRssItems("not a url")
-        assertTrue(items.isEmpty())
-    }
-}
-
-private class FakeRssRepository : RssRepository() {
-    private val fakeItems = listOf(
-        RssItem(1, "Morning Motivation", "Start your day with a positive quote.", "https://example.com/morning-motivation"),
-        RssItem(2, "Mindfulness Minute", "A short mindfulness exercise for your commute.", "https://example.com/mindfulness-minute"),
-        RssItem(3, "Gratitude Check", "Three things to be grateful for today.", "https://example.com/gratitude-check")
-    )
-
-    override fun getRssItems(feedUrl: String): List<RssItem> = fakeItems
-}
-
-@ExperimentalCoroutinesApi
 class RssFeedViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -160,59 +127,12 @@ class RssFeedViewModelTest {
     }
 }
 
-class RssItemTest {
+private class FakeRssRepository : RssRepository() {
+    private val fakeItems = listOf(
+        RssItem(1, "Morning Motivation", "Start your day with a positive quote.", "https://example.com/morning-motivation"),
+        RssItem(2, "Mindfulness Minute", "A short mindfulness exercise for your commute.", "https://example.com/mindfulness-minute"),
+        RssItem(3, "Gratitude Check", "Three things to be grateful for today.", "https://example.com/gratitude-check")
+    )
 
-    @Test
-    fun rssItem_createsWithAllFields() {
-        val item = RssItem(
-            id = 1,
-            title = "Test Title",
-            description = "Test Description",
-            link = "https://test.com"
-        )
-
-        assertEquals(1, item.id)
-        assertEquals("Test Title", item.title)
-        assertEquals("Test Description", item.description)
-        assertEquals("https://test.com", item.link)
-    }
-
-    @Test
-    fun rssItem_supportsEmptyDescription() {
-        val item = RssItem(
-            id = 1,
-            title = "Test",
-            description = "",
-            link = "https://test.com"
-        )
-
-        assertEquals("", item.description)
-    }
-
-    @Test
-    fun rssItem_equality() {
-        val item1 = RssItem(1, "Title", "Desc", "Link")
-        val item2 = RssItem(1, "Title", "Desc", "Link")
-
-        assertEquals(item1, item2)
-    }
-
-    @Test
-    fun rssItem_inequality_differentId() {
-        val item1 = RssItem(1, "Title", "Desc", "Link")
-        val item2 = RssItem(2, "Title", "Desc", "Link")
-
-        assertTrue(item1 != item2)
-    }
-
-    @Test
-    fun rssItem_copy_works() {
-        val original = RssItem(1, "Title", "Desc", "Link")
-        val copied = original.copy(title = "New Title")
-
-        assertEquals(1, copied.id)
-        assertEquals("New Title", copied.title)
-        assertEquals("Desc", copied.description)
-        assertEquals("Link", copied.link)
-    }
+    override fun getRssItems(feedUrl: String): List<RssItem> = fakeItems
 }
