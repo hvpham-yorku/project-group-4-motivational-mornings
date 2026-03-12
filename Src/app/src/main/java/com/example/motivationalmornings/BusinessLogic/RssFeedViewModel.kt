@@ -71,7 +71,7 @@ class RssFeedViewModel(
 
     fun unsubscribeFromFeed(url: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 dailyContentDao?.deleteRssFeedUrl(url)
             }
             _subscribedFeeds.value = _subscribedFeeds.value.filter { it != url }
