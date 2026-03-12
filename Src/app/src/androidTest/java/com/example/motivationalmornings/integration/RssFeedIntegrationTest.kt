@@ -8,11 +8,14 @@ import com.example.motivationalmornings.BusinessLogic.RssFeedViewModel
 import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.RssItem
 import com.example.motivationalmornings.Persistence.RssRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -41,6 +44,7 @@ class RssFeedIntegrationTest {
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
         val context: Context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
@@ -56,6 +60,7 @@ class RssFeedIntegrationTest {
     @After
     fun tearDown() {
         db.close()
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -67,11 +72,11 @@ class RssFeedIntegrationTest {
         advanceUntilIdle()
 
         // Verify it's in the subscribed list
-        val subscribed = viewModel.subscribedFeeds.value
+        val subscribed = viewModel.subscribedFeeds.first { it.contains(testUrl) }
         assertTrue("URL should be in subscribed feeds", subscribed.contains(testUrl))
 
         // Verify items are loaded
-        val items = viewModel.rssItems.value
+        val items = viewModel.rssItems.first { it.isNotEmpty() }
         assertEquals(1, items.size)
         assertEquals("Test Title", items[0].title)
 
@@ -94,7 +99,7 @@ class RssFeedIntegrationTest {
         advanceUntilIdle()
 
         // Verify it's removed from ViewModel state
-        val subscribed = viewModel.subscribedFeeds.value
+        val subscribed = viewModel.subscribedFeeds.first { !it.contains(testUrl) }
         assertTrue("URL should be removed from subscribed feeds", !subscribed.contains(testUrl))
 
         // Verify it's removed from database
@@ -108,7 +113,7 @@ class RssFeedIntegrationTest {
         viewModel.loadFeed(testUrl)
         advanceUntilIdle()
 
-        val items = viewModel.rssItems.value
+        val items = viewModel.rssItems.first { it.isNotEmpty() }
         assertEquals(1, items.size)
         assertEquals("Test Title", items[0].title)
     }

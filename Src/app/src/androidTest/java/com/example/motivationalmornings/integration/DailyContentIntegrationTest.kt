@@ -10,13 +10,15 @@ import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.FakeAnalyticsRepository
 import com.example.motivationalmornings.data.RoomContentRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -41,6 +43,7 @@ class DailyContentIntegrationTest {
 
     @Before
     fun setup() = runTest {
+        Dispatchers.setMain(testDispatcher)
         val context: Context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
@@ -60,13 +63,14 @@ class DailyContentIntegrationTest {
     @After
     fun tearDown() {
         db.close()
+        Dispatchers.resetMain()
     }
 
     @Test
     fun viewModel_initialization_loadsQuoteFromDb() = runTest(testDispatcher) {
-        advanceUntilIdle()
-        val quote = viewModel.quote.value
-        assertTrue("Quote should be one of the defaults", quote in defaultQuotes)
+        // We need to trigger the lazy StateFlow by accessing it or subscribing
+        val quote = viewModel.quote.first { it != "Loading quote..." }
+        assertTrue("Quote should be one of the defaults: $quote", quote in defaultQuotes)
     }
 
     @Test
@@ -76,8 +80,8 @@ class DailyContentIntegrationTest {
         
         advanceUntilIdle()
 
-        // Verify state update
-        val intentions = viewModel.intentions.value
+        // Verify state update - using first to ensure we collect the latest update
+        val intentions = viewModel.intentions.first { it.contains(intentionText) }
         assertTrue("Intention should be in the list", intentions.contains(intentionText))
 
         // Verify database persistence
@@ -92,7 +96,7 @@ class DailyContentIntegrationTest {
         
         advanceUntilIdle()
 
-        val allQuotes = viewModel.allQuotes.value
+        val allQuotes = viewModel.allQuotes.first { quotes -> quotes.any { it.text == newQuote } }
         assertTrue("New quote should be in the list", allQuotes.any { it.text == newQuote })
 
         val dbQuotes = db.dailyContentDao().getAllQuotes().first()
@@ -101,14 +105,14 @@ class DailyContentIntegrationTest {
 
     @Test
     fun deleteQuote_removesFromDbAndState() = runTest(testDispatcher) {
-        advanceUntilIdle()
-        val initialQuotes = viewModel.allQuotes.value
+        // Ensure data is loaded
+        val initialQuotes = viewModel.allQuotes.first { it.isNotEmpty() }
         val toDelete = initialQuotes.first()
         
         viewModel.deleteQuote(toDelete)
         advanceUntilIdle()
 
-        val remainingQuotes = viewModel.allQuotes.value
+        val remainingQuotes = viewModel.allQuotes.first { quotes -> quotes.none { it.uid == toDelete.uid } }
         assertTrue("Quote should be removed from state", remainingQuotes.none { it.uid == toDelete.uid })
 
         val dbQuotes = db.dailyContentDao().getAllQuotes().first()
