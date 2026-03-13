@@ -1,4 +1,4 @@
-package com.example.motivationalmornings.data.weather
+package com.example.motivationalmornings.Persistence.weather
 
 data class WeatherInfo(
     val temperatureC: Double,
