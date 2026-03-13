@@ -1,16 +1,17 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.BusinessLogic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.motivationalmornings.data.weather.WeatherInfo
-import com.example.motivationalmornings.data.weather.WeatherRepository
+import com.example.motivationalmornings.Persistence.weather.HardcodedWeatherRepository
+import com.example.motivationalmornings.Persistence.weather.WeatherInfo
+import com.example.motivationalmornings.Persistence.weather.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class WeatherViewModel(
-    private val repo: WeatherRepository = WeatherRepository()
+    private val repo: WeatherRepository = HardcodedWeatherRepository()
 ) : ViewModel() {
 
     private val _weather = MutableStateFlow<WeatherInfo?>(null)
