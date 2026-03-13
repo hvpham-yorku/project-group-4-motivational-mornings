@@ -80,6 +80,10 @@ fun DailyContent(
                 textFieldValue = "" // Clear field after submit
             }
         )
+
+        // ✅ Weather goes here (inside the Column, AFTER Intentions)
+        Spacer(modifier = Modifier.height(16.dp))
+        WeatherScreen()
     }
 
     if (showAddQuoteDialog) {
@@ -255,7 +259,9 @@ fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
             Image(
                 painter = painterResource(id = imageResId),
                 contentDescription = "Image of the day placeholder",
-                modifier = Modifier.fillMaxWidth().height(200.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
             )
         }
     }
