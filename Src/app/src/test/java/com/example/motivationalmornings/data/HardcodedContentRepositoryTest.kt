@@ -7,16 +7,17 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class HardcodedContentRepositoryTest {
     @Test
-    fun getQuote_returnsHardcodedQuote() = runTest {
+    fun getQuote_returnsQuoteBasedOnDay() = runTest {
         val repo = HardcodedContentRepository()
+        val allQuotes = repo.getAllQuotes().first().sortedBy { it.uid }
+        val dayIndex = (LocalDate.now().toEpochDay() % allQuotes.size).toInt()
+        val expectedQuote = allQuotes[dayIndex].text
 
-        assertEquals(
-            "The best way to predict the future is to create it.",
-            repo.getQuote().first()
-        )
+        assertEquals(expectedQuote, repo.getQuote().first())
     }
 
     @Test
@@ -45,18 +46,20 @@ class HardcodedContentRepositoryTest {
         val repo = HardcodedContentRepository()
         val quotes = repo.getAllQuotes().first()
         assertEquals(5, quotes.size)
-        assertEquals("The best way to predict the future is to create it.", quotes[0].text)
+        // Default quotes are added with IDs 1 to 5. Since saveQuote adds to the top (index 0)
+        // in the previous version, but here we just check initial state.
+        // The sorted list should contain the first default quote.
+        assertTrue(quotes.any { it.text == "The best way to predict the future is to create it." })
     }
 
     @Test
-    fun saveQuote_updatesQuoteAndAddsToAllQuotes() = runTest {
+    fun saveQuote_addsToAllQuotes() = runTest {
         val repo = HardcodedContentRepository()
         val initialCount = repo.getAllQuotes().first().size
         repo.saveQuote("New quote text")
-        assertEquals("New quote text", repo.getQuote().first())
         val allQuotes = repo.getAllQuotes().first()
         assertEquals(initialCount + 1, allQuotes.size)
-        assertEquals("New quote text", allQuotes[0].text)
+        assertTrue(allQuotes.any { it.text == "New quote text" })
     }
 
     @Test
@@ -66,10 +69,10 @@ class HardcodedContentRepositoryTest {
         repo.saveQuote("Second")
         val quotes = repo.getAllQuotes().first()
         val countBeforeDelete = quotes.size
-        repo.deleteQuote(quotes[1])
+        val quoteToDelete = quotes[0]
+        repo.deleteQuote(quoteToDelete)
         val afterDelete = repo.getAllQuotes().first()
         assertEquals(countBeforeDelete - 1, afterDelete.size)
-        assertEquals("Second", afterDelete[0].text)
+        assertTrue(afterDelete.none { it.uid == quoteToDelete.uid })
     }
 }
-

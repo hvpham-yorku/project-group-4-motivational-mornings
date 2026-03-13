@@ -34,3 +34,10 @@
  
  ## Monday March 2nd
  - Discussed progress in sprint 2
+ 
+ ## Monday March 9th
+ - Discussed what elements were missing in interation 2 that we could add with the extension
+ - Assigned work for the extension to sprint 2
+ - Jordi: Adjust documentation, review unit tests, create integration tests, minor adjustments to implemented features
+ - Arsh: Add accidentally removed weather feature
+ - Hassan: Add database support for image of the day, make RSS items clickable

@@ -2,10 +2,17 @@
 
 ## ITR2 Highlights
 
-- **Persistent storage**: Room (SQLite) in `Persistence/DailyContentRepository.kt`; `ContentRepository` interface with `RoomContentRepository` (real DB) and `HardcodedContentRepository` (stub). Switch via `DatabaseConfig.USE_REAL_DATABASE` (single-line change).
-- **Default content**: Same five default quotes in both the database (on create) and the stub (`ContentRepository.kt`).
-- **Testing**: Unit tests in `src/test` (including `unit/` package); integration tests for persistence (actual Room DB) in `src/androidTest/java/.../integration/ContentRepositoryIntegrationTest.kt`.
-- **Database**: See `database/README.md` for schema and setup.
+### Database
+ - Implemented a database to serve as persistent storage for the project
+ - Database was implemented with "Room" persitence library
+ - Database now works with the following: daily quotes, images of the day, RSS feeds
+
+### RSS Feed
+ - Implemented the RSS feed feature
+ - A user can subscribe to an RSS feed (the link is then saved in the database)
+ - User can unsubscribe from the RSS feed
+ - User can see RSS content
+ - User can select RSS items to have the content open up
 
 ## Major Source Code Files
 
@@ -54,7 +61,7 @@
  	 - Single-line switch USE_REAL_DATABASE to choose real DB vs stub.
  - RssItem.kt
 	 - Data class for RSS
- - RssRepository
+ - RssRepository.kt
 	 - Database connector and url handler for RSS feature
 
 ## Deployment Guide

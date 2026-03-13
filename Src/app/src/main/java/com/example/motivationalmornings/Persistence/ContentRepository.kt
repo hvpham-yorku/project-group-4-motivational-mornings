@@ -26,7 +26,15 @@ class RoomContentRepository(
 ) : ContentRepository {
 
     override fun getQuote(): Flow<String> =
-        dailyContentDao.getRandomQuote().map { it ?: "The best way to predict the future is to create it." }
+        dailyContentDao.getAllQuotes().map { quotes ->
+            if (quotes.isEmpty()) {
+                "The best way to predict the future is to create it."
+            } else {
+                val sortedQuotes = quotes.sortedBy { it.uid }
+                val dayIndex = (LocalDate.now().toEpochDay() % sortedQuotes.size).toInt()
+                sortedQuotes[dayIndex].text
+            }
+        }
 
     override fun getImageResId(): Flow<Int> {
         val images = listOf(
@@ -81,9 +89,16 @@ class HardcodedContentRepository : ContentRepository {
     private val _quotesFlow = MutableStateFlow<List<QuoteOfTheDay>>(
         DEFAULT_QUOTES.mapIndexed { index, text -> QuoteOfTheDay(uid = index + 1, text = text) }
     )
-    private val _quoteFlow = MutableStateFlow(DEFAULT_QUOTES.first())
 
-    override fun getQuote(): Flow<String> = _quoteFlow.asStateFlow()
+    override fun getQuote(): Flow<String> = _quotesFlow.map { quotes ->
+        if (quotes.isEmpty()) {
+            DEFAULT_QUOTES.first()
+        } else {
+            val sortedQuotes = quotes.sortedBy { it.uid }
+            val dayIndex = (LocalDate.now().toEpochDay() % sortedQuotes.size).toInt()
+            sortedQuotes[dayIndex].text
+        }
+    }
 
     override fun getImageResId(): Flow<Int> {
         val images = listOf(
@@ -111,7 +126,6 @@ class HardcodedContentRepository : ContentRepository {
 
     override suspend fun saveQuote(quote: String) {
         if (quote.isNotBlank()) {
-            _quoteFlow.value = quote
             val currentQuotes = _quotesFlow.value.toMutableList()
             val nextId = (currentQuotes.maxOfOrNull { it.uid } ?: 0) + 1
             currentQuotes.add(0, QuoteOfTheDay(uid = nextId, text = quote))
