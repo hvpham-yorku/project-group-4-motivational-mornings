@@ -1,5 +1,7 @@
 package com.example.motivationalmornings.Presentation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.RssFeedViewModel
@@ -46,6 +49,7 @@ fun RssFeedScreen(
     val rssItems by viewModel.rssItems.collectAsState()
     val currentFeedUrl by viewModel.currentFeedUrl.collectAsState()
     val subscribedFeeds by viewModel.subscribedFeeds.collectAsState()
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
@@ -108,7 +112,9 @@ fun RssFeedScreen(
                 RssItemCard(
                     item = item,
                     onClick = {
-                        // Later: open link in CustomTab/Browser or navigate to detail screen
+                        // Open the article link in browser
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
+                        context.startActivity(intent)
                     }
                 )
             }
@@ -142,6 +148,8 @@ fun RssItemCard(
             Text(
                 text = item.link,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                textDecoration = TextDecoration.Underline,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
