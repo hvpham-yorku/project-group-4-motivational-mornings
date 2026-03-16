@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.ContentRepository
@@ -28,6 +29,9 @@ class DailyContentViewModel(
         .stateIn(viewModelScope, SharingStarted.Lazily, R.drawable.ic_launcher_background)
 
     val intentions: StateFlow<List<String>> = contentRepository.getIntentions()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val allIntentions: StateFlow<List<Intention>> = contentRepository.getAllIntentions()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()

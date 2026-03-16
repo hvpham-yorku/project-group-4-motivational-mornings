@@ -41,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.DailyContentViewModel
+import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 
 @Composable
@@ -53,10 +54,12 @@ fun DailyContent(
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()
     val savedIntentions by viewModel.intentions.collectAsState()
+    val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
     var showManageQuotesDialog by remember { mutableStateOf(false) }
+    var showArchiveIntentionsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -78,7 +81,8 @@ fun DailyContent(
             onSubmit = {
                 viewModel.saveIntention(textFieldValue)
                 textFieldValue = "" // Clear field after submit
-            }
+            },
+            onViewArchiveClick = { showArchiveIntentionsDialog = true }
         )
 
         // ✅ Weather goes here (inside the Column, AFTER Intentions)
@@ -103,6 +107,13 @@ fun DailyContent(
             onDeleteQuote = { quote ->
                 viewModel.deleteQuote(quote)
             }
+        )
+    }
+
+    if (showArchiveIntentionsDialog) {
+        ArchiveIntentionsDialog(
+            intentions = allIntentions,
+            onDismiss = { showArchiveIntentionsDialog = false }
         )
     }
 }
@@ -248,6 +259,54 @@ fun ManageQuotesDialog(
 }
 
 @Composable
+fun ArchiveIntentionsDialog(
+    intentions: List<Intention>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Intentions Archive") },
+        text = {
+            if (intentions.isEmpty()) {
+                Text("No intentions archived yet.")
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    items(intentions) { intention ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = intention.date,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = intention.text,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
 fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -273,14 +332,40 @@ fun Intentions(
     intentions: List<String>,
     textFieldValue: String,
     onIntentionChanged: (String) -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    onViewArchiveClick: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Your Intentions",
-                style = MaterialTheme.typography.headlineSmall
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Your Intentions",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("View archive") },
+                            onClick = {
+                                expanded = false
+                                onViewArchiveClick()
+                            }
+                        )
+                    }
+                }
+            }
 
             if (intentions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
