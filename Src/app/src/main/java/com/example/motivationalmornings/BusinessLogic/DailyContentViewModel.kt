@@ -11,8 +11,10 @@ import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.FakeAnalyticsRepository
 import com.example.motivationalmornings.data.HardcodedContentRepository
 import com.example.motivationalmornings.data.RoomContentRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -33,13 +35,18 @@ class DailyContentViewModel(
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    // ✅ User-selected Image of the Day (in-memory for now)
+    private val _userImageUri = MutableStateFlow<String?>(null)
+    val userImageUri: StateFlow<String?> = _userImageUri.asStateFlow()
+
+    fun saveUserImageUri(uri: String) {
+        _userImageUri.value = uri
+    }
+
     fun saveIntention(intention: String) {
         if (intention.isNotBlank()) {
             viewModelScope.launch {
-                // Save to repository for persistence
                 contentRepository.saveIntention(intention)
-
-                // Track the analytics event
                 analytics.trackIntentionSet(intention, imageResId.value)
             }
         }
@@ -60,21 +67,20 @@ class DailyContentViewModel(
     }
 
     companion object {
-        fun provideFactory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val contentRepository: ContentRepository = if (DatabaseConfig.USE_REAL_DATABASE) {
-                    RoomContentRepository(AppDatabase.getDatabase(context).dailyContentDao())
-                } else {
-                    HardcodedContentRepository()
+        fun provideFactory(context: Context): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    val contentRepository: ContentRepository = if (DatabaseConfig.USE_REAL_DATABASE) {
+                        RoomContentRepository(AppDatabase.getDatabase(context).dailyContentDao())
+                    } else {
+                        HardcodedContentRepository()
+                    }
+                    val analyticsRepository = FakeAnalyticsRepository()
+                    val analytics = Analytics(analyticsRepository)
+
+                    return DailyContentViewModel(contentRepository, analytics) as T
                 }
-                val analyticsRepository = FakeAnalyticsRepository()
-                val analytics = Analytics(analyticsRepository)
-                return DailyContentViewModel(
-                    contentRepository,
-                    analytics
-                ) as T
             }
-        }
     }
 }
