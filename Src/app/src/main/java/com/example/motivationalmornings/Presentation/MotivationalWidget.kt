@@ -18,6 +18,7 @@ import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
@@ -68,8 +69,7 @@ class MotivationalWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .appWidgetBackground()
                 .background(ColorProvider(Color.White))
-                .padding(12.dp)
-                .clickable(actionStartActivity(MainActivity::class.java)),
+                .padding(12.dp),
             verticalAlignment = Alignment.Vertical.Top,
             horizontalAlignment = Alignment.Horizontal.Start
         ) {
@@ -84,7 +84,9 @@ class MotivationalWidget : GlanceAppWidget() {
                         fontSize = 16.sp,
                         color = ColorProvider(Color.Black)
                     ),
-                    modifier = GlanceModifier.defaultWeight()
+                    modifier = GlanceModifier
+                        .defaultWeight()
+                        .clickable(actionStartActivity(MainActivity::class.java))
                 )
                 
                 Button(
@@ -143,8 +145,17 @@ class MotivationalWidget : GlanceAppWidget() {
 
 class RefreshAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        MotivationalWidget().update(context, glanceId)
+        // Force a fresh DB read before issuing widget updates.
+        val dao = AppDatabase.getDatabase(context).dailyContentDao()
+        val today = LocalDate.now().toString()
+        dao.getIntentionsByDate(today).first()
+        dao.getAllQuotes().first()
+        MotivationalWidget().updateAll(context)
     }
+}
+
+suspend fun refreshMotivationalWidgets(context: Context) {
+    MotivationalWidget().updateAll(context)
 }
 
 class MotivationalWidgetReceiver : GlanceAppWidgetReceiver() {

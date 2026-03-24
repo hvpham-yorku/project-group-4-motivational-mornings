@@ -1,5 +1,13 @@
 # EECS 2311 Project Group 4: Motivational Mornings
 
+## ITR3 Highlights
+
+### Aggregator
+ - Implemented the aggregator feature
+ - Allow the user to input a link to a source
+ - The aggregator uses-webscraping to extract news articles from the given source
+  - The aggregator assumes that the source given contains headlines to articles in a format similar to "https://www.cnn.com/world"
+
 ## ITR2 Highlights
 
 ### Database
