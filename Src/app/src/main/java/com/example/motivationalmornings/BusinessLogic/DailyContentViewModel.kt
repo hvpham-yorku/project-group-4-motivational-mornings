@@ -53,6 +53,14 @@ class DailyContentViewModel(
         }
     }
 
+    fun saveReflection(uid: Int, reflection: String) {
+        if (reflection.isNotBlank()) {
+            viewModelScope.launch {
+                contentRepository.updateReflection(uid, reflection)
+            }
+        }
+    }
+
     fun saveQuote(newQuote: String) {
         if (newQuote.isNotBlank()) {
             viewModelScope.launch {
