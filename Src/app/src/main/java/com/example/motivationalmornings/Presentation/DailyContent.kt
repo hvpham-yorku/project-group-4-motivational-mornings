@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -25,6 +26,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -113,7 +115,10 @@ fun DailyContent(
     if (showArchiveIntentionsDialog) {
         ArchiveIntentionsDialog(
             intentions = allIntentions,
-            onDismiss = { showArchiveIntentionsDialog = false }
+            onDismiss = { showArchiveIntentionsDialog = false },
+            onSaveReflection = { uid, reflection ->
+                viewModel.saveReflection(uid, reflection)
+            }
         )
     }
 }
@@ -261,8 +266,11 @@ fun ManageQuotesDialog(
 @Composable
 fun ArchiveIntentionsDialog(
     intentions: List<Intention>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveReflection: (Int, String) -> Unit
 ) {
+    var intentionToReflectOn by remember { mutableStateOf<Intention?>(null) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Intentions Archive") },
@@ -273,7 +281,7 @@ fun ArchiveIntentionsDialog(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp)
+                        .height(400.dp)
                 ) {
                     items(intentions) { intention ->
                         Card(
@@ -282,16 +290,41 @@ fun ArchiveIntentionsDialog(
                                 .padding(vertical = 4.dp)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = intention.date,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = intention.date,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    OutlinedButton(
+                                        onClick = { intentionToReflectOn = intention },
+                                        modifier = Modifier.wrapContentSize()
+                                    ) {
+                                        Text(if (intention.reflection.isNullOrBlank()) "Reflect" else "Edit Reflection")
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = intention.text,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
+                                if (!intention.reflection.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Reflection:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Text(
+                                        text = intention.reflection,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    )
+                                }
                             }
                         }
                     }
@@ -301,6 +334,60 @@ fun ArchiveIntentionsDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("Close")
+            }
+        }
+    )
+
+    if (intentionToReflectOn != null) {
+        AddReflectionDialog(
+            intention = intentionToReflectOn!!,
+            onDismiss = { intentionToReflectOn = null },
+            onConfirm = { reflection ->
+                onSaveReflection(intentionToReflectOn!!.uid, reflection)
+                intentionToReflectOn = null
+            }
+        )
+    }
+}
+
+@Composable
+fun AddReflectionDialog(
+    intention: Intention,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var reflectionText by remember { mutableStateOf(intention.reflection ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reflect on Intention") },
+        text = {
+            Column {
+                Text(
+                    text = "Intention: ${intention.text}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = reflectionText,
+                    onValueChange = { reflectionText = it },
+                    label = { Text("How did it go?") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(reflectionText) },
+                enabled = reflectionText.isNotBlank()
+            ) {
+                Text("Save Reflection")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )

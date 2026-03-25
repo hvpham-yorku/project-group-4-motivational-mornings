@@ -17,6 +17,7 @@ interface ContentRepository {
     fun getIntentions(): Flow<List<String>>
     fun getAllIntentions(): Flow<List<Intention>>
     suspend fun saveIntention(intention: String)
+    suspend fun updateReflection(uid: Int, reflection: String)
     suspend fun saveQuote(quote: String)
     fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
     suspend fun deleteQuote(quote: QuoteOfTheDay)
@@ -63,6 +64,10 @@ class RoomContentRepository(
                 Intention(text = intention, date = LocalDate.now().toString())
             )
         }
+    }
+
+    override suspend fun updateReflection(uid: Int, reflection: String) {
+        dailyContentDao.updateReflection(uid, reflection)
     }
 
     override suspend fun saveQuote(quote: String) {
@@ -128,6 +133,15 @@ class HardcodedContentRepository : ContentRepository {
         if (intention.isNotBlank()) {
             val currentIntentions = _intentionsFlow.value.toMutableList()
             currentIntentions.add(0, Intention(text = intention, date = LocalDate.now().toString()))
+            _intentionsFlow.value = currentIntentions
+        }
+    }
+
+    override suspend fun updateReflection(uid: Int, reflection: String) {
+        val currentIntentions = _intentionsFlow.value.toMutableList()
+        val index = currentIntentions.indexOfFirst { it.uid == uid }
+        if (index != -1) {
+            currentIntentions[index] = currentIntentions[index].copy(reflection = reflection)
             _intentionsFlow.value = currentIntentions
         }
     }
