@@ -1,42 +1,103 @@
 package com.example.motivationalmornings
 
+import com.example.motivationalmornings.data.AggregatorArticle
+import com.example.motivationalmornings.data.AggregatorWebScraper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class AggregatorViewModelTest {
 
-    private lateinit var viewModel: AggregatorViewModel
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
-        viewModel = AggregatorViewModel()
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun initialAggregatorText_isAggregatorScreen() = runTest {
-        // Given: ViewModel is initialized
-        // When: Getting aggregator text
-        val text = viewModel.aggregatorText.first()
-
-        // Then: Text should be "Aggregator Screen"
-        assertEquals("Aggregator Screen", text)
+    fun initialState_isEmpty() = runTest {
+        val vm = AggregatorViewModel(FakeAggregatorWebScraper(Result.success(emptyList())))
+        assertEquals("", vm.sourceUrl.value)
+        assertTrue(vm.articles.value.isEmpty())
+        assertFalse(vm.isLoading.value)
+        assertNull(vm.errorMessage.value)
     }
 
     @Test
-    fun aggregatorText_remainsConstant() = runTest {
-        // Given: ViewModel is initialized
-        val initialText = viewModel.aggregatorText.first()
-
-        // When: Collecting text again
-        val subsequentText = viewModel.aggregatorText.value
-
-        // Then: Text should remain the same
-        assertEquals(initialText, subsequentText)
-        assertEquals("Aggregator Screen", subsequentText)
+    fun onSourceUrlChanged_updatesUrl() = runTest {
+        val vm = AggregatorViewModel(FakeAggregatorWebScraper(Result.success(emptyList())))
+        vm.onSourceUrlChanged(" https://example.com/world ")
+        assertEquals(" https://example.com/world ", vm.sourceUrl.value)
     }
+
+    @Test
+    fun loadHeadlines_withEmptyUrl_setsError() = runTest {
+        val vm = AggregatorViewModel(FakeAggregatorWebScraper(Result.success(emptyList())))
+        vm.onSourceUrlChanged("   ")
+        vm.loadHeadlines()
+        advanceUntilIdle()
+        assertTrue(vm.errorMessage.value!!.contains("Enter", ignoreCase = true))
+        assertTrue(vm.articles.value.isEmpty())
+    }
+
+    @Test
+    fun loadHeadlines_onSuccess_populatesArticles() = runTest {
+        val articles = listOf(
+            AggregatorArticle("A long enough headline here", "https://example.com/a"),
+        )
+        val vm = AggregatorViewModel(FakeAggregatorWebScraper(Result.success(articles)))
+        vm.onSourceUrlChanged("https://example.com/world")
+        vm.loadHeadlines()
+        advanceUntilIdle()
+        assertEquals(1, vm.articles.value.size)
+        assertEquals("A long enough headline here", vm.articles.value[0].title)
+        assertNull(vm.errorMessage.value)
+        assertFalse(vm.isLoading.value)
+    }
+
+    @Test
+    fun loadHeadlines_onSuccess_emptyList_setsMessage() = runTest {
+        val vm = AggregatorViewModel(FakeAggregatorWebScraper(Result.success(emptyList())))
+        vm.onSourceUrlChanged("https://example.com/world")
+        vm.loadHeadlines()
+        advanceUntilIdle()
+        assertTrue(vm.articles.value.isEmpty())
+        assertTrue(vm.errorMessage.value!!.contains("No headlines", ignoreCase = true))
+    }
+
+    @Test
+    fun loadHeadlines_onFailure_clearsArticlesAndSetsError() = runTest {
+        val vm = AggregatorViewModel(
+            FakeAggregatorWebScraper(Result.failure(Exception("network problem"))),
+        )
+        vm.onSourceUrlChanged("https://example.com/world")
+        vm.loadHeadlines()
+        advanceUntilIdle()
+        assertTrue(vm.articles.value.isEmpty())
+        assertEquals("network problem", vm.errorMessage.value)
+    }
+}
+
+private class FakeAggregatorWebScraper(
+    private val result: Result<List<AggregatorArticle>>,
+) : AggregatorWebScraper {
+    override suspend fun scrapeHeadlines(pageUrl: String): Result<List<AggregatorArticle>> = result
 }

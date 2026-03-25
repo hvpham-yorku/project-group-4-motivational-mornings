@@ -43,6 +43,9 @@ interface DailyContentDao {
     @Query("SELECT text FROM intentions WHERE date = :date ORDER BY uid DESC")
     fun getIntentionsByDate(date: String): Flow<List<String>>
 
+    @Query("SELECT * FROM intentions ORDER BY date DESC, uid DESC")
+    fun getAllIntentions(): Flow<List<Intention>>
+
     @Query("SELECT text FROM quotes ORDER BY RANDOM() LIMIT 1")
     fun getRandomQuote(): Flow<String?>
 

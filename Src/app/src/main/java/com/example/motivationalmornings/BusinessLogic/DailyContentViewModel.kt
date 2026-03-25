@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
+import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
 import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.FakeAnalyticsRepository
@@ -18,7 +20,9 @@ import kotlinx.coroutines.launch
 
 class DailyContentViewModel(
     private val contentRepository: ContentRepository,
-    private val analytics: Analytics
+    private val analytics: Analytics,
+    private val appContext: Context,
+    private val refreshWidgets: suspend () -> Unit = { refreshMotivationalWidgets(appContext) },
 ) : ViewModel() {
 
     val quote: StateFlow<String> = contentRepository.getQuote()
@@ -30,6 +34,9 @@ class DailyContentViewModel(
     val intentions: StateFlow<List<String>> = contentRepository.getIntentions()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    val allIntentions: StateFlow<List<Intention>> = contentRepository.getAllIntentions()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -38,6 +45,7 @@ class DailyContentViewModel(
             viewModelScope.launch {
                 // Save to repository for persistence
                 contentRepository.saveIntention(intention)
+                refreshWidgets()
 
                 // Track the analytics event
                 analytics.trackIntentionSet(intention, imageResId.value)
@@ -49,6 +57,7 @@ class DailyContentViewModel(
         if (newQuote.isNotBlank()) {
             viewModelScope.launch {
                 contentRepository.saveQuote(newQuote)
+                refreshWidgets()
             }
         }
     }
@@ -56,6 +65,7 @@ class DailyContentViewModel(
     fun deleteQuote(quote: QuoteOfTheDay) {
         viewModelScope.launch {
             contentRepository.deleteQuote(quote)
+            refreshWidgets()
         }
     }
 
@@ -72,7 +82,8 @@ class DailyContentViewModel(
                 val analytics = Analytics(analyticsRepository)
                 return DailyContentViewModel(
                     contentRepository,
-                    analytics
+                    analytics,
+                    context.applicationContext
                 ) as T
             }
         }

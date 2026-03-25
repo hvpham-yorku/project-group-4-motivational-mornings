@@ -15,6 +15,7 @@ interface ContentRepository {
     fun getQuote(): Flow<String>
     fun getImageResId(): Flow<Int>
     fun getIntentions(): Flow<List<String>>
+    fun getAllIntentions(): Flow<List<Intention>>
     suspend fun saveIntention(intention: String)
     suspend fun saveQuote(quote: String)
     fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
@@ -53,6 +54,9 @@ class RoomContentRepository(
     override fun getIntentions(): Flow<List<String>> =
         dailyContentDao.getIntentionsByDate(LocalDate.now().toString())
 
+    override fun getAllIntentions(): Flow<List<Intention>> =
+        dailyContentDao.getAllIntentions()
+
     override suspend fun saveIntention(intention: String) {
         if (intention.isNotBlank()) {
             dailyContentDao.insertIntention(
@@ -85,7 +89,7 @@ private val DEFAULT_QUOTES = listOf(
 )
 
 class HardcodedContentRepository : ContentRepository {
-    private val _intentionsFlow = MutableStateFlow<List<String>>(emptyList())
+    private val _intentionsFlow = MutableStateFlow<List<Intention>>(emptyList())
     private val _quotesFlow = MutableStateFlow<List<QuoteOfTheDay>>(
         DEFAULT_QUOTES.mapIndexed { index, text -> QuoteOfTheDay(uid = index + 1, text = text) }
     )
@@ -114,12 +118,16 @@ class HardcodedContentRepository : ContentRepository {
         return flowOf(images[dayIndex])
     }
 
-    override fun getIntentions(): Flow<List<String>> = _intentionsFlow.asStateFlow()
+    override fun getIntentions(): Flow<List<String>> = _intentionsFlow.map { intentions ->
+        intentions.filter { it.date == LocalDate.now().toString() }.map { it.text }
+    }
+
+    override fun getAllIntentions(): Flow<List<Intention>> = _intentionsFlow.asStateFlow()
 
     override suspend fun saveIntention(intention: String) {
         if (intention.isNotBlank()) {
             val currentIntentions = _intentionsFlow.value.toMutableList()
-            currentIntentions.add(0, intention)
+            currentIntentions.add(0, Intention(text = intention, date = LocalDate.now().toString()))
             _intentionsFlow.value = currentIntentions
         }
     }
