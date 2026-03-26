@@ -14,6 +14,11 @@
  - Implemented a database to serve as persistent storage for the project
  - Database was implemented with "Room" persitence library
  - Database now works with the following: daily quotes, images of the day, RSS feeds
+ - There is no additional setup needed for the database
+  - Room uses an embedded SQLite database stored in the app's data directory
+ - You can switch between the database and the stub using the "DatabaseConfig.kt" file
+  - Change the value of "DatabaseConfig.USE_REAL_DATABASE" to "false" if you want to use the stub
+  - If you want to use the real database set it to "true"
 
 ### RSS Feed
  - Implemented the RSS feed feature
