@@ -1,4 +1,4 @@
-package com.example.motivationalmornings.data
+package com.example.motivationalmornings.Persistence
 
 import java.util.Date
 
