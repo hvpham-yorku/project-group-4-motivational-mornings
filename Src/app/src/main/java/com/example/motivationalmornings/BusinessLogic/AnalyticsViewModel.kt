@@ -8,7 +8,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.util.Locale
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 data class AnalyticsState(
     val totalIntentions: Int = 0,
@@ -66,28 +68,41 @@ class AnalyticsViewModel(
     }
 
     /**
-     * Groups weather strings like "Clear, 3°C" into buckets like "Clear, 2-3°C".
-     * A 2-degree range is used: [0-1], [2-3], [4-5], etc.
+     * Groups weather strings like "Clear, 3.4°C" into buckets like "Clear, 2-4°C".
+     * Stored weather uses [Double] Celsius from the API; decimals must be parsed so
+     * near-identical readings merge. Condition text is normalized (whitespace + casing)
+     * so the same condition shares one bucket. A 3°C-wide band groups values within
+     * two degrees of each other (e.g. 2°C and 4°C).
      */
     private fun groupWeather(weather: String): String {
-        val regex = Regex("""^(.+),\s*(-?\d+)°C$""")
-        val match = regex.find(weather)
+        val regex = Regex("""^(.+),\s*(-?\d+(?:\.\d+)?)°C$""")
+        val match = regex.find(weather.trim())
         return if (match != null) {
-            val condition = match.groupValues[1].trim()
-            val temp = match.groupValues[2].toInt()
-            
-            // Calculate bucket: 2-degree ranges
-            // e.g., 0 and 1 -> 0; 2 and 3 -> 2; 4 and 5 -> 4
+            val condition = normalizeConditionLabel(match.groupValues[1])
+            val temp = match.groupValues[2].toDouble().roundToInt()
+
+            val bucketSize = 3
             val bucketStart = if (temp >= 0) {
-                (temp / 2) * 2
+                ((temp - 2) / bucketSize) * bucketSize + 2
             } else {
-                floor((temp.toDouble()) / 2).toInt() * 2
+                (floor((temp.toDouble() - 2) / bucketSize).toInt() * bucketSize) + 2
             }
-            val bucketEnd = bucketStart + 1
+            val bucketEnd = bucketStart + (bucketSize - 1)
+
             "$condition, $bucketStart-$bucketEnd°C"
         } else {
-            weather
+            weather.trim()
         }
+    }
+
+    private fun normalizeConditionLabel(raw: String): String {
+        val collapsed = raw.trim().replace(Regex("\\s+"), " ")
+        return collapsed.split(' ')
+            .joinToString(" ") { word ->
+                word.lowercase(Locale.getDefault()).replaceFirstChar { c ->
+                    c.titlecase(Locale.getDefault())
+                }
+            }
     }
 
     fun getIntentionsByKeyword(keyword: String): List<Intention> {

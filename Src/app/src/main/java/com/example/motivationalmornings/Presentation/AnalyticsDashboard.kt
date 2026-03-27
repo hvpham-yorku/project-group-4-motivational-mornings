@@ -115,15 +115,20 @@ fun AnalyticsDashboard(
                 style = MaterialTheme.typography.titleLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
-            state.weatherDistribution.forEach { (weather, count) ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = weather)
-                    Text(text = count.toString(), fontWeight = FontWeight.Bold)
+            state.weatherDistribution.entries
+                .sortedWith(
+                    compareByDescending<Map.Entry<String, Int>> { it.value }
+                        .thenBy { it.key }
+                )
+                .forEach { (weather, count) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = weather)
+                        Text(text = count.toString(), fontWeight = FontWeight.Bold)
+                    }
                 }
-            }
             Spacer(modifier = Modifier.height(24.dp))
         }
 
