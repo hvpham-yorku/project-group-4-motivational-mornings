@@ -1,18 +1,19 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.BusinessLogic
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.DatabaseConfig
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.ContentRepository
+import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
+import com.example.motivationalmornings.Persistence.HardcodedContentRepository
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
+import com.example.motivationalmornings.Persistence.RoomContentRepository
 import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
-import com.example.motivationalmornings.analytics.Analytics
-import com.example.motivationalmornings.data.ContentRepository
-import com.example.motivationalmornings.data.FakeAnalyticsRepository
-import com.example.motivationalmornings.data.HardcodedContentRepository
-import com.example.motivationalmornings.data.RoomContentRepository
+import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -40,15 +41,15 @@ class DailyContentViewModel(
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    fun saveIntention(intention: String) {
+    fun saveIntention(intention: String, weather: String? = null) {
         if (intention.isNotBlank()) {
             viewModelScope.launch {
                 // Save to repository for persistence
-                contentRepository.saveIntention(intention)
+                contentRepository.saveIntention(intention, weather)
                 refreshWidgets()
 
                 // Track the analytics event
-                analytics.trackIntentionSet(intention, imageResId.value)
+                analytics.trackIntentionSet(intention, imageResId.value, weather)
             }
         }
     }

@@ -1,8 +1,5 @@
-package com.example.motivationalmornings.data
+package com.example.motivationalmornings.Persistence
 
-import com.example.motivationalmornings.Persistence.DailyContentDao
-import com.example.motivationalmornings.Persistence.Intention
-import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +13,7 @@ interface ContentRepository {
     fun getImageResId(): Flow<Int>
     fun getIntentions(): Flow<List<String>>
     fun getAllIntentions(): Flow<List<Intention>>
-    suspend fun saveIntention(intention: String)
+    suspend fun saveIntention(intention: String, weather: String? = null)
     suspend fun updateReflection(uid: Int, reflection: String)
     suspend fun saveQuote(quote: String)
     fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
@@ -58,10 +55,14 @@ class RoomContentRepository(
     override fun getAllIntentions(): Flow<List<Intention>> =
         dailyContentDao.getAllIntentions()
 
-    override suspend fun saveIntention(intention: String) {
+    override suspend fun saveIntention(intention: String, weather: String?) {
         if (intention.isNotBlank()) {
             dailyContentDao.insertIntention(
-                Intention(text = intention, date = LocalDate.now().toString())
+                Intention(
+                    text = intention,
+                    date = LocalDate.now().toString(),
+                    weather = weather
+                )
             )
         }
     }
@@ -129,10 +130,17 @@ class HardcodedContentRepository : ContentRepository {
 
     override fun getAllIntentions(): Flow<List<Intention>> = _intentionsFlow.asStateFlow()
 
-    override suspend fun saveIntention(intention: String) {
+    override suspend fun saveIntention(intention: String, weather: String?) {
         if (intention.isNotBlank()) {
             val currentIntentions = _intentionsFlow.value.toMutableList()
-            currentIntentions.add(0, Intention(text = intention, date = LocalDate.now().toString()))
+            currentIntentions.add(
+                0,
+                Intention(
+                    text = intention,
+                    date = LocalDate.now().toString(),
+                    weather = weather
+                )
+            )
             _intentionsFlow.value = currentIntentions
         }
     }

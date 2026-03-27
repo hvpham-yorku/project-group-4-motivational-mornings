@@ -1,9 +1,10 @@
 package com.example.motivationalmornings
 
-import com.example.motivationalmornings.analytics.Analytics
-import com.example.motivationalmornings.data.AnalyticsRepository
-import com.example.motivationalmornings.data.ContentRepository
-import com.example.motivationalmornings.data.IntentionAnalyticsEvent
+import com.example.motivationalmornings.BusinessLogic.Analytics
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.Persistence.AnalyticsRepository
+import com.example.motivationalmornings.Persistence.ContentRepository
+import com.example.motivationalmornings.Persistence.IntentionAnalyticsEvent
 import android.content.Context
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
@@ -264,7 +265,7 @@ class DailyContentViewModelTest {
 
         override fun getAllIntentions(): Flow<List<Intention>> = _allIntentions
 
-        override suspend fun saveIntention(intention: String) {
+        override suspend fun saveIntention(intention: String, weather: String?) {
             savedIntentions.add(intention)
             val current = _intentions.value.toMutableList()
             current.add(0, intention)
@@ -272,9 +273,13 @@ class DailyContentViewModelTest {
             val withMeta = _allIntentions.value.toMutableList()
             withMeta.add(
                 0,
-                Intention(text = intention, date = LocalDate.now().toString()),
+                Intention(text = intention, date = LocalDate.now().toString(), weather = weather),
             )
             _allIntentions.value = withMeta
+        }
+
+        override suspend fun updateReflection(uid: Int, reflection: String) {
+            // Not needed for current tests
         }
 
         override suspend fun saveQuote(quote: String) {

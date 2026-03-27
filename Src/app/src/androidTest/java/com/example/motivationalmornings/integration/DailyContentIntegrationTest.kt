@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.motivationalmornings.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.Analytics
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
-import com.example.motivationalmornings.analytics.Analytics
-import com.example.motivationalmornings.data.FakeAnalyticsRepository
-import com.example.motivationalmornings.data.RoomContentRepository
+import com.example.motivationalmornings.Persistence.RoomContentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -57,7 +57,7 @@ class DailyContentIntegrationTest {
         val repository = RoomContentRepository(db.dailyContentDao())
         val analytics = Analytics(FakeAnalyticsRepository())
         
-        viewModel = DailyContentViewModel(repository, analytics)
+        viewModel = DailyContentViewModel(repository, analytics, context)
     }
 
     @After

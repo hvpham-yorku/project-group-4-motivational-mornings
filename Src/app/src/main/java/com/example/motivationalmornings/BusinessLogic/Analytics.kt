@@ -1,7 +1,7 @@
-package com.example.motivationalmornings.analytics
+package com.example.motivationalmornings.BusinessLogic
 
-import com.example.motivationalmornings.data.AnalyticsRepository
-import com.example.motivationalmornings.data.IntentionAnalyticsEvent
+import com.example.motivationalmornings.Persistence.AnalyticsRepository
+import com.example.motivationalmornings.Persistence.IntentionAnalyticsEvent
 import java.util.Date
 
 /**
@@ -12,11 +12,11 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
     /**
      * Tracks the event of an intention being set.
      */
-    suspend fun trackIntentionSet(intention: String, imageResId: Int) {
+    suspend fun trackIntentionSet(intention: String, imageResId: Int, weather: String?) {
         val event = IntentionAnalyticsEvent(
             intention = intention,
             timestamp = Date(),
-            weather = "Sunny", // Dummy data for now
+            weather = weather ?: "Unknown",
             imageResId = imageResId
         )
         analyticsRepository.trackIntentionSet(event)

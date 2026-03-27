@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -42,7 +41,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.motivationalmornings.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 
@@ -51,13 +51,16 @@ fun DailyContent(
     modifier: Modifier = Modifier,
     viewModel: DailyContentViewModel = viewModel(
         factory = DailyContentViewModel.provideFactory(LocalContext.current)
-    )
+    ),
+    weatherViewModel: WeatherViewModel = viewModel()
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()
     val savedIntentions by viewModel.intentions.collectAsState()
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
+    val weatherInfo by weatherViewModel.weather.collectAsState()
+
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
     var showManageQuotesDialog by remember { mutableStateOf(false) }
@@ -81,7 +84,8 @@ fun DailyContent(
             textFieldValue = textFieldValue,
             onIntentionChanged = { textFieldValue = it },
             onSubmit = {
-                viewModel.saveIntention(textFieldValue)
+                val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
+                viewModel.saveIntention(textFieldValue, weatherString)
                 textFieldValue = "" // Clear field after submit
             },
             onViewArchiveClick = { showArchiveIntentionsDialog = true }
@@ -89,7 +93,7 @@ fun DailyContent(
 
         // ✅ Weather goes here (inside the Column, AFTER Intentions)
         Spacer(modifier = Modifier.height(16.dp))
-        WeatherScreen()
+        WeatherScreen(vm = weatherViewModel)
     }
 
     if (showAddQuoteDialog) {
@@ -295,11 +299,20 @@ fun ArchiveIntentionsDialog(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = intention.date,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Column {
+                                        Text(
+                                            text = intention.date,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (!intention.weather.isNullOrBlank()) {
+                                            Text(
+                                                text = "Weather: ${intention.weather}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    }
                                     OutlinedButton(
                                         onClick = { intentionToReflectOn = intention },
                                         modifier = Modifier.wrapContentSize()
