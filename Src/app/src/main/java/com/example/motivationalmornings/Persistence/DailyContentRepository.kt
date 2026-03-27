@@ -25,7 +25,8 @@ data class Intention(
     @ColumnInfo(name = "text") val text: String,
     @ColumnInfo(name = "date") val date: String,
     @ColumnInfo(name = "reflection") val reflection: String? = null,
-    @ColumnInfo(name = "weather") val weather: String? = null
+    @ColumnInfo(name = "weather") val weather: String? = null,
+    @ColumnInfo(name = "time") val time: String? = null
 )
 
 @Entity(tableName = "quotes")
@@ -76,7 +77,7 @@ interface DailyContentDao {
     suspend fun deleteRssFeedUrl(url: String)
 }
 
-@Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 4)
+@Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 5)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyContentDao(): DailyContentDao
 
@@ -108,6 +109,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE intentions ADD COLUMN time TEXT"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -115,7 +124,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "motivational_mornings_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)

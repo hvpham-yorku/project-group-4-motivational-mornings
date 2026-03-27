@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 interface ContentRepository {
     fun getQuote(): Flow<String>
@@ -57,11 +59,13 @@ class RoomContentRepository(
 
     override suspend fun saveIntention(intention: String, weather: String?) {
         if (intention.isNotBlank()) {
+            val currentTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
             dailyContentDao.insertIntention(
                 Intention(
                     text = intention,
                     date = LocalDate.now().toString(),
-                    weather = weather
+                    weather = weather,
+                    time = currentTime
                 )
             )
         }
@@ -132,13 +136,15 @@ class HardcodedContentRepository : ContentRepository {
 
     override suspend fun saveIntention(intention: String, weather: String?) {
         if (intention.isNotBlank()) {
+            val currentTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
             val currentIntentions = _intentionsFlow.value.toMutableList()
             currentIntentions.add(
                 0,
                 Intention(
                     text = intention,
                     date = LocalDate.now().toString(),
-                    weather = weather
+                    weather = weather,
+                    time = currentTime
                 )
             )
             _intentionsFlow.value = currentIntentions

@@ -301,7 +301,7 @@ fun ArchiveIntentionsDialog(
                                 ) {
                                     Column {
                                         Text(
-                                            text = intention.date,
+                                            text = if (intention.time != null) "${intention.date} at ${intention.time}" else intention.date,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )

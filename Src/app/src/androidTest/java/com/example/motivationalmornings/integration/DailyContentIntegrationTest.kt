@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -85,8 +86,11 @@ class DailyContentIntegrationTest {
         assertTrue("Intention should be in the list", intentions.contains(intentionText))
 
         // Verify database persistence
-        val dbIntentions = db.dailyContentDao().getIntentionsByDate(LocalDate.now().toString()).first()
-        assertTrue("Intention should be persisted in DB", dbIntentions.contains(intentionText))
+        val dbIntentions = db.dailyContentDao().getAllIntentions().first()
+        val savedIntention = dbIntentions.find { it.text == intentionText }
+        assertNotNull("Intention should be persisted in DB", savedIntention)
+        assertNotNull("Saved intention should have a time", savedIntention?.time)
+        assertTrue("Time should follow HH:mm format", savedIntention?.time?.matches(Regex("\\d{2}:\\d{2}")) == true)
     }
 
     @Test
