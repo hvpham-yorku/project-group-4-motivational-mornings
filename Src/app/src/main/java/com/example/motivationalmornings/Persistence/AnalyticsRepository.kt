@@ -7,7 +7,8 @@ data class IntentionAnalyticsEvent(
     val intention: String,
     val timestamp: Date,
     val weather: String, // For now, a simple string. Can be a more complex object later.
-    val imageResId: Int
+    val imageResId: Int,
+    val keywords: List<String> = emptyList()
 )
 
 // Interface for our analytics repository

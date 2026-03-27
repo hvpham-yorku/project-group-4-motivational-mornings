@@ -20,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.MainViewModel
@@ -62,8 +61,7 @@ fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
-                AppDestinations.HOME -> Greeting(
-                    name = "Android",
+                AppDestinations.DASHBOARD -> AnalyticsDashboard(
                     modifier = Modifier.padding(innerPadding)
                 )
 
@@ -88,25 +86,9 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    HOME("Home", Icons.Default.Home),
+    DASHBOARD("Dashboard", Icons.Default.Home),
     DAILY_CONTENT("Daily Content", Icons.Default.DateRange),
     AGGREGATOR("Aggregator", Icons.AutoMirrored.Filled.List),
     RSS_FEED("RSS Feed", Icons.Default.Favorite),
 
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MotivationalMorningsTheme {
-        Greeting("Android")
-    }
 }

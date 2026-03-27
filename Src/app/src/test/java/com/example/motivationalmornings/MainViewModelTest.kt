@@ -19,18 +19,18 @@ class MainViewModelTest {
     }
 
     @Test
-    fun initialDestination_isHome() = runTest {
+    fun initialDestination_isDashboard() = runTest {
         // Given: ViewModel is initialized
         // When: Getting current destination
         val destination = viewModel.currentDestination.first()
 
-        // Then: Default destination should be HOME
-        assertEquals(AppDestinations.HOME, destination)
+        // Then: Default destination should be DASHBOARD
+        assertEquals(AppDestinations.DASHBOARD, destination)
     }
 
     @Test
     fun setCurrentDestination_updatesToDailyContent() = runTest {
-        // Given: ViewModel is initialized with HOME
+        // Given: ViewModel is initialized with DASHBOARD
         // When: Setting destination to DAILY_CONTENT
         viewModel.setCurrentDestination(AppDestinations.DAILY_CONTENT)
 
@@ -68,8 +68,8 @@ class MainViewModelTest {
         viewModel.setCurrentDestination(AppDestinations.RSS_FEED)
         assertEquals(AppDestinations.RSS_FEED, viewModel.currentDestination.value)
 
-        viewModel.setCurrentDestination(AppDestinations.HOME)
-        // Then: Should return to HOME
-        assertEquals(AppDestinations.HOME, viewModel.currentDestination.value)
+        viewModel.setCurrentDestination(AppDestinations.DASHBOARD)
+        // Then: Should return to DASHBOARD
+        assertEquals(AppDestinations.DASHBOARD, viewModel.currentDestination.value)
     }
 }

@@ -22,20 +22,20 @@ class AppDestinationsTest {
     }
 
     @Test
-    fun home_hasCorrectLabel() {
-        // Given: HOME destination
+    fun dashboard_hasCorrectLabel() {
+        // Given: DASHBOARD destination
         // When: Getting label
-        val label = AppDestinations.HOME.label
+        val label = AppDestinations.DASHBOARD.label
 
-        // Then: Label should be "Home"
-        assertEquals("Home", label)
+        // Then: Label should be "Dashboard"
+        assertEquals("Dashboard", label)
     }
 
     @Test
-    fun home_hasCorrectIcon() {
-        // Given: HOME destination
+    fun dashboard_hasCorrectIcon() {
+        // Given: DASHBOARD destination
         // When: Getting icon
-        val icon = AppDestinations.HOME.icon
+        val icon = AppDestinations.DASHBOARD.icon
 
         // Then: Icon should be Home icon
         assertEquals(Icons.Default.Home, icon)
@@ -121,13 +121,13 @@ class AppDestinationsTest {
     }
 
     @Test
-    fun valueOf_findsHome() {
-        // Given: String "HOME"
+    fun valueOf_findsDashboard() {
+        // Given: String "DASHBOARD"
         // When: Getting enum by name
-        val destination = AppDestinations.valueOf("HOME")
+        val destination = AppDestinations.valueOf("DASHBOARD")
 
-        // Then: Should return HOME destination
-        assertEquals(AppDestinations.HOME, destination)
+        // Then: Should return DASHBOARD destination
+        assertEquals(AppDestinations.DASHBOARD, destination)
     }
 
     @Test

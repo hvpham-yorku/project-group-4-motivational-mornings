@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MainViewModel : ViewModel() {
-    private val _currentDestination = MutableStateFlow<AppDestinations>(AppDestinations.HOME)
+    private val _currentDestination = MutableStateFlow<AppDestinations>(AppDestinations.DASHBOARD)
     val currentDestination: StateFlow<AppDestinations> = _currentDestination.asStateFlow()
 
     fun setCurrentDestination(destination: AppDestinations) {
