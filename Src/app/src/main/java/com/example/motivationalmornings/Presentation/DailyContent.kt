@@ -1,5 +1,9 @@
 package com.example.motivationalmornings.Presentation
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -31,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,11 +42,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.motivationalmornings.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 
@@ -55,9 +61,11 @@ fun DailyContent(
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageResId by viewModel.imageResId.collectAsState()
+    val userImageUri by viewModel.userImageUri.collectAsState()
     val savedIntentions by viewModel.intentions.collectAsState()
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
+
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
     var showManageQuotesDialog by remember { mutableStateOf(false) }
@@ -73,21 +81,30 @@ fun DailyContent(
             onAddQuoteClick = { showAddQuoteDialog = true },
             onManageQuotesClick = { showManageQuotesDialog = true }
         )
+
         Spacer(modifier = Modifier.height(16.dp))
-        ImageOfTheDay(imageResId = imageResId)
+
+        ImageOfTheDay(
+            imageResId = imageResId,
+            userImageUri = userImageUri,
+            onUserPickedImage = { uriString ->
+                viewModel.saveUserImageUri(uriString)
+            }
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
+
         Intentions(
             intentions = savedIntentions,
             textFieldValue = textFieldValue,
             onIntentionChanged = { textFieldValue = it },
             onSubmit = {
                 viewModel.saveIntention(textFieldValue)
-                textFieldValue = "" // Clear field after submit
+                textFieldValue = ""
             },
             onViewArchiveClick = { showArchiveIntentionsDialog = true }
         )
 
-        // ✅ Weather goes here (inside the Column, AFTER Intentions)
         Spacer(modifier = Modifier.height(16.dp))
         WeatherScreen()
     }
@@ -304,7 +321,13 @@ fun ArchiveIntentionsDialog(
                                         onClick = { intentionToReflectOn = intention },
                                         modifier = Modifier.wrapContentSize()
                                     ) {
-                                        Text(if (intention.reflection.isNullOrBlank()) "Reflect" else "Edit Reflection")
+                                        Text(
+                                            if (intention.reflection.isNullOrBlank()) {
+                                                "Reflect"
+                                            } else {
+                                                "Edit Reflection"
+                                            }
+                                        )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -322,7 +345,7 @@ fun ArchiveIntentionsDialog(
                                     Text(
                                         text = intention.reflection,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                        fontStyle = FontStyle.Italic
                                     )
                                 }
                             }
@@ -394,7 +417,36 @@ fun AddReflectionDialog(
 }
 
 @Composable
-fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
+fun ImageOfTheDay(
+    modifier: Modifier = Modifier,
+    imageResId: Int,
+    userImageUri: String?,
+    onUserPickedImage: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            onUserPickedImage(uri.toString())
+        }
+    }
+
+    val bitmapState = remember(userImageUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(userImageUri) {
+        bitmapState.value = null
+        if (userImageUri != null) {
+            runCatching {
+                val uri = Uri.parse(userImageUri)
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    bitmapState.value = BitmapFactory.decodeStream(input)
+                }
+            }
+        }
+    }
+
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -402,13 +454,31 @@ fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
                 style = MaterialTheme.typography.headlineSmall
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Image(
-                painter = painterResource(id = imageResId),
-                contentDescription = "Image of the day placeholder",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
+
+            Button(onClick = { pickImageLauncher.launch("image/*") }) {
+                Text("Choose image")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val bmp = bitmapState.value
+            if (bmp != null) {
+                Image(
+                    bitmap = bmp.asImageBitmap(),
+                    contentDescription = "User selected image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = imageResId),
+                    contentDescription = "Default image of the day",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+            }
         }
     }
 }
