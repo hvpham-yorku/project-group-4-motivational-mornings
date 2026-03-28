@@ -46,6 +46,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
 import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
@@ -443,7 +444,7 @@ fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
 fun Intentions(
     modifier: Modifier = Modifier,
     intentions: List<String>,
-    suggestedIntentions: List<String> = emptyList(),
+    suggestedIntentions: List<IntentionSuggestion> = emptyList(),
     textFieldValue: String,
     onIntentionChanged: (String) -> Unit,
     onSuggestionClick: (String) -> Unit = {},
@@ -536,10 +537,10 @@ fun Intentions(
                 ) {
                     suggestedIntentions.forEach { suggestion ->
                         AssistChip(
-                            onClick = { onSuggestionClick(suggestion) },
+                            onClick = { onSuggestionClick(suggestion.intention) },
                             label = {
                                 Text(
-                                    text = suggestion,
+                                    text = suggestion.explanation,
                                     style = MaterialTheme.typography.bodySmall,
                                     maxLines = 2
                                 )

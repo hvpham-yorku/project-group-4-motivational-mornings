@@ -49,7 +49,7 @@ class DailyContentViewModel(
         suggestionWeatherContext.value = weatherDisplay
     }
 
-    val intentionSuggestions: StateFlow<List<String>> = combine(
+    val intentionSuggestions: StateFlow<List<IntentionSuggestion>> = combine(
         contentRepository.getAllIntentions(),
         intentions,
         suggestionWeatherContext

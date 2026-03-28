@@ -19,6 +19,11 @@ data class IntentionPattern(
     val count: Int
 )
 
+data class IntentionSuggestion(
+    val explanation: String,
+    val intention: String
+)
+
 private data class PatternKey(
     val keyword: String,
     val dayOfWeek: String?,
@@ -167,7 +172,7 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
         allIntentions: List<Intention>,
         currentWeatherDisplay: String?,
         alreadyTodayTexts: List<String>
-    ): List<String> {
+    ): List<IntentionSuggestion> {
         if (allIntentions.isEmpty()) return emptyList()
 
         val today = todayDayOfWeekLabel()
@@ -178,16 +183,21 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
         val ranked = rankPatternsForContext(patterns, today, nowBucket, weatherBucket)
         val skip = alreadyTodayTexts.map { it.trim().lowercase(Locale.getDefault()) }.toSet()
 
-        val out = LinkedHashSet<String>()
+        val out = mutableListOf<IntentionSuggestion>()
+        val seenIntentions = mutableSetOf<String>()
+
         for (pattern in ranked) {
             if (out.size >= 3) break
-            val text = explanationForPattern(pattern)
-            if (text.isNotBlank() && text.trim().lowercase(Locale.getDefault()) !in skip) {
-                out.add(text.trim())
+            val explanation = explanationForPattern(pattern)
+            val intention = intentionFromPattern(pattern)
+            
+            if (explanation.isNotBlank() && intention.trim().lowercase(Locale.getDefault()) !in skip && intention !in seenIntentions) {
+                out.add(IntentionSuggestion(explanation, intention))
+                seenIntentions.add(intention)
             }
         }
 
-        if (out.isEmpty()) {
+        if (out.size < 3) {
             val topKeywords = allIntentions
                 .flatMap { extractKeywords(it.text) }
                 .groupingBy { it }
@@ -196,15 +206,18 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
                 .sortedByDescending { it.value }
                 .map { it.key }
                 .distinct()
-                .take(3)
+            
             for (kw in topKeywords) {
                 if (out.size >= 3) break
-                val text = fallbackTemplateForKeyword(kw)
-                if (text.lowercase(Locale.getDefault()) !in skip) out.add(text)
+                val intention = intentionFromKeyword(kw)
+                if (intention.lowercase(Locale.getDefault()) !in skip && intention !in seenIntentions) {
+                    out.add(IntentionSuggestion(fallbackTemplateForKeyword(kw), intention))
+                    seenIntentions.add(intention)
+                }
             }
         }
 
-        return out.toList()
+        return out
     }
 
     private fun explanationForPattern(pattern: IntentionPattern): String {
@@ -227,6 +240,33 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
             pattern.weather != null ->
                 "When it's ${pattern.weather}, you typically $kw."
             else -> fallbackTemplateForKeyword(pattern.keyword)
+        }
+    }
+
+    private fun intentionFromPattern(pattern: IntentionPattern): String {
+        return when (val kw = pattern.keyword.lowercase(Locale.getDefault())) {
+            "shovel" -> "Today I want to shovel snow"
+            "coat" -> "Today I'll remember my coat"
+            else -> intentionFromKeyword(kw)
+        }
+    }
+
+    private fun intentionFromKeyword(keyword: String): String {
+        val word = keyword.lowercase(Locale.getDefault())
+        return when (word) {
+            "run" -> "Today I want to go for a run"
+            "read" -> "Today I want to read my book"
+            "meditate" -> "Today I want to meditate"
+            "work" -> "Today I want to focus on work"
+            "exercise" -> "Today I want to exercise"
+            "walk" -> "Today I want to go for a walk"
+            "study" -> "Today I want to study"
+            "clean" -> "Today I want to clean"
+            "journal" -> "Today I want to journal"
+            else -> {
+                val capitalized = keyword.replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                "Today I want to focus on $capitalized"
+            }
         }
     }
 
