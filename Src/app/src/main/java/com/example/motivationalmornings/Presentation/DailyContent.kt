@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -30,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +63,13 @@ fun DailyContent(
     val savedIntentions by viewModel.intentions.collectAsState()
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
+    val intentionSuggestions by viewModel.intentionSuggestions.collectAsState()
     val weatherInfo by weatherViewModel.weather.collectAsState()
+
+    LaunchedEffect(weatherInfo) {
+        val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
+        viewModel.updateIntentionSuggestionContext(weatherString)
+    }
 
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
@@ -81,8 +91,10 @@ fun DailyContent(
         Spacer(modifier = Modifier.height(16.dp))
         Intentions(
             intentions = savedIntentions,
+            suggestedIntentions = intentionSuggestions,
             textFieldValue = textFieldValue,
             onIntentionChanged = { textFieldValue = it },
+            onSuggestionClick = { textFieldValue = it },
             onSubmit = {
                 val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
                 viewModel.saveIntention(textFieldValue, weatherString)
@@ -426,12 +438,15 @@ fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Intentions(
     modifier: Modifier = Modifier,
     intentions: List<String>,
+    suggestedIntentions: List<String> = emptyList(),
     textFieldValue: String,
     onIntentionChanged: (String) -> Unit,
+    onSuggestionClick: (String) -> Unit = {},
     onSubmit: () -> Unit,
     onViewArchiveClick: () -> Unit
 ) {
@@ -508,6 +523,32 @@ fun Intentions(
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
+            if (suggestedIntentions.isNotEmpty()) {
+                Text(
+                    text = "Suggestions from your patterns:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    suggestedIntentions.forEach { suggestion ->
+                        AssistChip(
+                            onClick = { onSuggestionClick(suggestion) },
+                            label = {
+                                Text(
+                                    text = suggestion,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 2
+                                )
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             OutlinedTextField(
                 value = textFieldValue,
                 onValueChange = onIntentionChanged,

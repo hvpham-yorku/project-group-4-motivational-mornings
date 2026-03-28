@@ -14,8 +14,10 @@ import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
 import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
 import com.example.motivationalmornings.R
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -40,6 +42,24 @@ class DailyContentViewModel(
 
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    private val suggestionWeatherContext = MutableStateFlow<String?>(null)
+
+    fun updateIntentionSuggestionContext(weatherDisplay: String?) {
+        suggestionWeatherContext.value = weatherDisplay
+    }
+
+    val intentionSuggestions: StateFlow<List<String>> = combine(
+        contentRepository.getAllIntentions(),
+        intentions,
+        suggestionWeatherContext
+    ) { all, todayTexts, weather ->
+        analytics.suggestIntentionsFromPatterns(all, weather, todayTexts)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
     fun saveIntention(intention: String, weather: String? = null) {
         if (intention.isNotBlank()) {
