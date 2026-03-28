@@ -4,6 +4,8 @@ import com.example.motivationalmornings.analytics.Analytics
 import com.example.motivationalmornings.data.AnalyticsRepository
 import com.example.motivationalmornings.data.ContentRepository
 import com.example.motivationalmornings.data.IntentionAnalyticsEvent
+import android.content.Context
+import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,6 +24,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
+import java.time.LocalDate
 
 @ExperimentalCoroutinesApi
 class DailyContentViewModelTest {
@@ -36,7 +41,14 @@ class DailyContentViewModelTest {
         Dispatchers.setMain(testDispatcher)
         mockRepository = MockContentRepository()
         mockAnalyticsRepository = MockAnalyticsRepository()
-        viewModel = DailyContentViewModel(mockRepository, Analytics(mockAnalyticsRepository))
+        val appContext = mock(Context::class.java)
+        `when`(appContext.applicationContext).thenReturn(appContext)
+        viewModel = DailyContentViewModel(
+            mockRepository,
+            Analytics(mockAnalyticsRepository),
+            appContext,
+            refreshWidgets = {},
+        )
     }
 
     @After
@@ -47,6 +59,7 @@ class DailyContentViewModelTest {
     private suspend fun TestScope.triggerStateFlows() {
         viewModel.quote.first()
         viewModel.intentions.first()
+        viewModel.allIntentions.first()
         viewModel.allQuotes.first()
         viewModel.imageResId.first()
         advanceUntilIdle()
@@ -240,6 +253,7 @@ class DailyContentViewModelTest {
     private class MockContentRepository : ContentRepository {
         val savedIntentions = mutableListOf<String>()
         private val _intentions = MutableStateFlow<List<String>>(emptyList())
+        private val _allIntentions = MutableStateFlow<List<Intention>>(emptyList())
         private val _quotes = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
 
         override fun getQuote(): Flow<String> = flowOf("Test quote from repository")
@@ -248,11 +262,19 @@ class DailyContentViewModelTest {
 
         override fun getIntentions(): Flow<List<String>> = _intentions
 
+        override fun getAllIntentions(): Flow<List<Intention>> = _allIntentions
+
         override suspend fun saveIntention(intention: String) {
             savedIntentions.add(intention)
             val current = _intentions.value.toMutableList()
             current.add(0, intention)
             _intentions.value = current
+            val withMeta = _allIntentions.value.toMutableList()
+            withMeta.add(
+                0,
+                Intention(text = intention, date = LocalDate.now().toString()),
+            )
+            _allIntentions.value = withMeta
         }
 
         override suspend fun saveQuote(quote: String) {

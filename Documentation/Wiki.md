@@ -1,11 +1,31 @@
 # EECS 2311 Project Group 4: Motivational Mornings
 
+## ITR3 Highlights
+
+### Aggregator
+ - Implemented the aggregator feature
+ - Allow the user to input a link to a source
+ - The aggregator uses-webscraping to extract news articles from the given source
+  - The aggregator assumes that the source given contains headlines to articles in a format similar to "https://www.cnn.com/world"
+
 ## ITR2 Highlights
 
-- **Persistent storage**: Room (SQLite) in `Persistence/DailyContentRepository.kt`; `ContentRepository` interface with `RoomContentRepository` (real DB) and `HardcodedContentRepository` (stub). Switch via `DatabaseConfig.USE_REAL_DATABASE` (single-line change).
-- **Default content**: Same five default quotes in both the database (on create) and the stub (`ContentRepository.kt`).
-- **Testing**: Unit tests in `src/test` (including `unit/` package); integration tests for persistence (actual Room DB) in `src/androidTest/java/.../integration/ContentRepositoryIntegrationTest.kt`.
-- **Database**: See `database/README.md` for schema and setup.
+### Database
+ - Implemented a database to serve as persistent storage for the project
+ - Database was implemented with "Room" persitence library
+ - Database now works with the following: daily quotes, images of the day, RSS feeds
+ - There is no additional setup needed for the database
+  - Room uses an embedded SQLite database stored in the app's data directory
+ - You can switch between the database and the stub using the "DatabaseConfig.kt" file
+  - Change the value of "DatabaseConfig.USE_REAL_DATABASE" to "false" if you want to use the stub
+  - If you want to use the real database set it to "true"
+
+### RSS Feed
+ - Implemented the RSS feed feature
+ - A user can subscribe to an RSS feed (the link is then saved in the database)
+ - User can unsubscribe from the RSS feed
+ - User can see RSS content
+ - User can select RSS items to have the content open up
 
 ## Major Source Code Files
 
@@ -54,7 +74,7 @@
  	 - Single-line switch USE_REAL_DATABASE to choose real DB vs stub.
  - RssItem.kt
 	 - Data class for RSS
- - RssRepository
+ - RssRepository.kt
 	 - Database connector and url handler for RSS feature
 
 ## Deployment Guide
