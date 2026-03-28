@@ -50,6 +50,7 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
         "paint", "draw", "sing", "dance", "play", "help", "save", "build", "create",
         "meditating", "running", "walking", "working", "learning", "cleaning",
         "cooking", "sleeping", "focusing", "writing", "reading", "coding", "starting",
+        "shovel", "wear",
         
         // Nouns
         "productivity", "meditation", "morning", "journaling", "workout", "nature",
@@ -57,6 +58,7 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
         "breath", "fruit", "veggies", "bike", "cycle", "project", "meeting", "class",
         "break", "rest", "energy", "time", "day", "week", "month", "year", "mind",
         "body", "soul", "heart", "health", "life", "dream", "success", "growth",
+        "snow", "coat",
         
         // Adjectives
         "healthy", "productive", "active", "strong", "patient", "helpful", "creative",
@@ -178,8 +180,8 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
 
         val out = LinkedHashSet<String>()
         for (pattern in ranked) {
-            if (out.size >= 6) break
-            val text = exampleOrTemplateForKeyword(pattern.keyword, pattern, allIntentions)
+            if (out.size >= 3) break
+            val text = explanationForPattern(pattern)
             if (text.isNotBlank() && text.trim().lowercase(Locale.getDefault()) !in skip) {
                 out.add(text.trim())
             }
@@ -194,15 +196,38 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
                 .sortedByDescending { it.value }
                 .map { it.key }
                 .distinct()
-                .take(6)
+                .take(3)
             for (kw in topKeywords) {
-                if (out.size >= 6) break
+                if (out.size >= 3) break
                 val text = fallbackTemplateForKeyword(kw)
                 if (text.lowercase(Locale.getDefault()) !in skip) out.add(text)
             }
         }
 
         return out.toList()
+    }
+
+    private fun explanationForPattern(pattern: IntentionPattern): String {
+        val kw = pattern.keyword.replaceFirstChar { it.titlecase(Locale.getDefault()) }
+        
+        return when {
+            // Specific examples provided by user
+            pattern.keyword.lowercase() == "shovel" && pattern.weather?.contains("Snow", ignoreCase = true) == true ->
+                "You often shovel snow around this time."
+            pattern.keyword.lowercase() == "coat" && pattern.weather != null ->
+                "At this temperature you wear a coat."
+                
+            // General patterns
+            pattern.dayOfWeek != null && pattern.timeOfDay != null ->
+                "You usually focus on $kw on ${pattern.dayOfWeek}s at ${pattern.timeOfDay}."
+            pattern.dayOfWeek != null ->
+                "You often think about $kw on ${pattern.dayOfWeek}s."
+            pattern.timeOfDay != null ->
+                "Around ${pattern.timeOfDay}, you frequently set intentions for $kw."
+            pattern.weather != null ->
+                "When it's ${pattern.weather}, you typically $kw."
+            else -> fallbackTemplateForKeyword(pattern.keyword)
+        }
     }
 
     private fun rankPatternsForContext(
@@ -230,34 +255,6 @@ class Analytics(private val analyticsRepository: AnalyticsRepository) {
         if (tier2.isNotEmpty()) return tier2
 
         return patterns.sortedByDescending { it.count }
-    }
-
-    private fun exampleOrTemplateForKeyword(
-        keyword: String,
-        pattern: IntentionPattern,
-        all: List<Intention>
-    ): String {
-        val lower = keyword.lowercase(Locale.getDefault())
-        val candidates = all
-            .filter { extractKeywords(it.text).any { w -> w.lowercase(Locale.getDefault()) == lower } }
-            .sortedWith(
-                compareByDescending<Intention> { intention ->
-                    var score = 0
-                    if (pattern.dayOfWeek != null) {
-                        val d = dayOfWeekLabel(intention.date)
-                        if (d == pattern.dayOfWeek) score += 3
-                    }
-                    if (pattern.weather != null && intention.weather != null) {
-                        if (groupWeather(intention.weather) == pattern.weather) score += 2
-                    }
-                    if (pattern.timeOfDay != null && intention.time != null) {
-                        if (hourBucketFromSavedTime(intention.time) == pattern.timeOfDay) score += 2
-                    }
-                    score
-                }.thenByDescending { it.uid }
-            )
-        val example = candidates.firstOrNull()?.text?.trim()
-        return if (!example.isNullOrBlank()) example else fallbackTemplateForKeyword(keyword)
     }
 
     private fun fallbackTemplateForKeyword(keyword: String): String {
