@@ -1,4 +1,4 @@
-package com.example.motivationalmornings.data
+package com.example.motivationalmornings.Persistence
 
 data class AggregatorArticle(
     val title: String,

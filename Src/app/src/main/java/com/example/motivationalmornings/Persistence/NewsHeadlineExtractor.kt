@@ -1,4 +1,4 @@
-package com.example.motivationalmornings.data
+package com.example.motivationalmornings.Persistence
 
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element

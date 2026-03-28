@@ -134,7 +134,7 @@ class AnalyticsViewModel(
     )
 
     /**
-     * Groups weather strings like "Clear, 3.4°C" into buckets like "Clear, 2-4°C".
+     * Groups weather strings like "Clear, 3.4°C" into buckets like "Clear, 2 to 4°C".
      * Stored weather uses [Double] Celsius from the API; decimals must be parsed so
      * near-identical readings merge. Condition text is normalized (whitespace + casing)
      * so the same condition shares one bucket. A 3°C-wide band groups values within
@@ -155,7 +155,7 @@ class AnalyticsViewModel(
             }
             val bucketEnd = bucketStart + (bucketSize - 1)
 
-            "$condition, $bucketStart-$bucketEnd°C"
+            "$condition, $bucketStart to $bucketEnd°C"
         } else {
             weather.trim()
         }

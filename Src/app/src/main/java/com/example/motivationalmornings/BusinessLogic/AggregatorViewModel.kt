@@ -2,9 +2,9 @@ package com.example.motivationalmornings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.motivationalmornings.data.AggregatorArticle
-import com.example.motivationalmornings.data.AggregatorWebScraper
-import com.example.motivationalmornings.data.DefaultAggregatorWebScraper
+import com.example.motivationalmornings.Persistence.AggregatorArticle
+import com.example.motivationalmornings.Persistence.AggregatorWebScraper
+import com.example.motivationalmornings.Persistence.DefaultAggregatorWebScraper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

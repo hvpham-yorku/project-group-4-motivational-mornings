@@ -1,5 +1,6 @@
 package com.example.motivationalmornings.data
 
+import com.example.motivationalmornings.Persistence.NewsHeadlineExtractor
 import org.jsoup.Jsoup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
