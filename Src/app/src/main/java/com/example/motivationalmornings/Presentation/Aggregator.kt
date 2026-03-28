@@ -20,15 +20,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.motivationalmornings.AggregatorViewModel
+import com.example.motivationalmornings.BusinessLogic.AggregatorViewModel
 import com.example.motivationalmornings.data.AggregatorArticle
 
 @Composable
@@ -42,6 +46,15 @@ fun AggregatorScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
 
+    // Keyword UI state (saved)
+    var keywordText by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        keywordText = viewModel.loadKeywords(context)
+    }
+
+    val filteredArticles = viewModel.filterArticles(articles, keywordText)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -54,7 +67,7 @@ fun AggregatorScreen(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Paste a link to a news section (for example a world news homepage). " +
-                "The app loads the page and lists story headlines from the HTML.",
+                    "The app loads the page and lists story headlines from the HTML.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -68,7 +81,9 @@ fun AggregatorScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+
         Spacer(modifier = Modifier.height(8.dp))
+
         Button(
             onClick = { viewModel.loadHeadlines() },
             enabled = !isLoading,
@@ -76,6 +91,21 @@ fun AggregatorScreen(
         ) {
             Text("Load headlines")
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✅ Keyword filter input
+        OutlinedTextField(
+            value = keywordText,
+            onValueChange = {
+                keywordText = it
+                viewModel.saveKeywords(context, it)
+            },
+            label = { Text("Filter keywords (comma-separated)") },
+            placeholder = { Text("york, canada, tech") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
         if (isLoading) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -97,7 +127,7 @@ fun AggregatorScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            items(articles, key = { it.url }) { article ->
+            items(filteredArticles, key = { it.url }) { article ->
                 AggregatorArticleCard(
                     article = article,
                     onClick = {
