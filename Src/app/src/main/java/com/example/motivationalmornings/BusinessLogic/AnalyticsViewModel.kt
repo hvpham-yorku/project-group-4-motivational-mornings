@@ -8,9 +8,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
 import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
+
+data class IntentionPattern(
+    val keyword: String,
+    val dayOfWeek: String? = null,
+    val timeOfDay: String? = null,
+    val weather: String? = null,
+    val count: Int
+)
 
 data class AnalyticsState(
     val totalIntentions: Int = 0,
@@ -18,7 +27,8 @@ data class AnalyticsState(
     val allKeywords: List<Pair<String, Int>> = emptyList(),
     val weatherDistribution: Map<String, Int> = emptyMap(),
     val intentionsByDate: Map<String, Int> = emptyMap(),
-    val allIntentions: List<Intention> = emptyList()
+    val allIntentions: List<Intention> = emptyList(),
+    val detectedPatterns: List<IntentionPattern> = emptyList()
 )
 
 class AnalyticsViewModel(
@@ -57,15 +67,71 @@ class AnalyticsViewModel(
             .eachCount()
             .toSortedMap()
 
+        val patterns = detectPatterns(intentions)
+
         return AnalyticsState(
             totalIntentions = intentions.size,
             topKeywords = top6Keywords,
             allKeywords = keywordCounts,
             weatherDistribution = weatherCounts,
             intentionsByDate = dateCounts,
-            allIntentions = intentions
+            allIntentions = intentions,
+            detectedPatterns = patterns
         )
     }
+
+    private fun detectPatterns(intentions: List<Intention>): List<IntentionPattern> {
+        val combinations = mutableMapOf<PatternKey, Int>()
+
+        intentions.forEach { intention ->
+            val keywords = analytics.extractKeywords(intention.text)
+            val dayOfWeek = try {
+                LocalDate.parse(intention.date).dayOfWeek.name.lowercase(Locale.getDefault())
+                    .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+            } catch (e: Exception) {
+                null
+            }
+            val timeBucket = intention.time?.split(":")?.firstOrNull()?.let { "$it:00" }
+            val weatherBucket = intention.weather?.let { groupWeather(it) }
+
+            keywords.forEach { keyword ->
+                // We look for patterns linking keyword with day, time, and weather.
+                // We track various combinations to find significant ones.
+                
+                // 1. Keyword + Day + Time (as requested in the example)
+                val dayTimeKey = PatternKey(keyword, dayOfWeek, timeBucket, null)
+                combinations[dayTimeKey] = combinations.getOrDefault(dayTimeKey, 0) + 1
+
+                // 2. Keyword + Weather
+                val weatherKey = PatternKey(keyword, null, null, weatherBucket)
+                combinations[weatherKey] = combinations.getOrDefault(weatherKey, 0) + 1
+                
+                // 3. Keyword + Day + Time + Weather (Full correlation)
+                val fullKey = PatternKey(keyword, dayOfWeek, timeBucket, weatherBucket)
+                combinations[fullKey] = combinations.getOrDefault(fullKey, 0) + 1
+            }
+        }
+
+        return combinations.filter { it.value > 1 } // Only report patterns occurring more than once
+            .map { (key, count) ->
+                IntentionPattern(
+                    keyword = key.keyword,
+                    dayOfWeek = key.dayOfWeek,
+                    timeOfDay = key.timeOfDay,
+                    weather = key.weather,
+                    count = count
+                )
+            }
+            .sortedByDescending { it.count }
+            .take(10) // Limit to top 10 most frequent patterns
+    }
+
+    private data class PatternKey(
+        val keyword: String,
+        val dayOfWeek: String?,
+        val timeOfDay: String?,
+        val weather: String?
+    )
 
     /**
      * Groups weather strings like "Clear, 3.4°C" into buckets like "Clear, 2-4°C".

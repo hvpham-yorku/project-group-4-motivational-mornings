@@ -18,6 +18,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +38,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.Analytics
 import com.example.motivationalmornings.BusinessLogic.AnalyticsViewModel
+import com.example.motivationalmornings.BusinessLogic.IntentionPattern
 import com.example.motivationalmornings.DatabaseConfig
 import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
@@ -72,6 +74,24 @@ fun AnalyticsDashboard(
         SummaryStat(label = "Total Intentions Set", value = state.totalIntentions.toString())
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (state.detectedPatterns.isNotEmpty()) {
+            Text(
+                text = "Habit Insights",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = "Patterns found in your daily intentions",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            state.detectedPatterns.forEach { pattern ->
+                PatternCard(pattern)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         if (state.topKeywords.isNotEmpty()) {
             Row(
@@ -170,6 +190,50 @@ fun AnalyticsDashboard(
     }
 }
 
+@Composable
+fun PatternCard(pattern: IntentionPattern) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            val description = buildString {
+                append("You often set intentions about ")
+                append("'")
+                append(pattern.keyword)
+                append("'")
+
+                if (pattern.dayOfWeek != null || pattern.timeOfDay != null) {
+                    append(" on ")
+                    if (pattern.dayOfWeek != null) append(pattern.dayOfWeek)
+                    if (pattern.dayOfWeek != null && pattern.timeOfDay != null) append(" at ")
+                    if (pattern.timeOfDay != null) append(pattern.timeOfDay)
+                }
+
+                if (pattern.weather != null) {
+                    append(" when it's ")
+                    append(pattern.weather)
+                }
+
+                append(".")
+            }
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Seen ${pattern.count} times",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AllKeywordsDialog(
@@ -228,7 +292,7 @@ fun KeywordIntentionsDialog(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text(
-                                        text = intention.date,
+                                        text = "${intention.date} ${intention.time ?: ""}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -237,6 +301,13 @@ fun KeywordIntentionsDialog(
                                         text = intention.text,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
+                                    if (intention.weather != null) {
+                                        Text(
+                                            text = "Weather: ${intention.weather}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
                                 }
                             }
                         }
