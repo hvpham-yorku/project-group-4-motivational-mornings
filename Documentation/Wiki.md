@@ -1,5 +1,9 @@
 # EECS 2311 Project Group 4: Motivational Mornings
 
+## Second Client interview
+Full video: https://drive.google.com/file/d/1xrT2gmar9DHwP4M8jqPb_rd6c8VdQeWy/view?usp=sharing
+Shortened version to under 3 minutes: https://drive.google.com/file/d/1spfk4LEhzpswE--XxlU015WglODJ4ufu/view?usp=sharing
+
 ## ITR3 Highlights
 
 ### Aggregator
