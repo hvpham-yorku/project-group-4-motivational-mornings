@@ -1,6 +1,9 @@
 package com.example.motivationalmornings.Presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -23,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -30,13 +34,18 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,14 +59,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
-import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import coil.compose.AsyncImage
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
+import com.example.motivationalmornings.Persistence.weather.WeatherInfo
 import java.io.File
 
 @Composable
@@ -65,8 +75,7 @@ fun DailyContent(
     modifier: Modifier = Modifier,
     viewModel: DailyContentViewModel = viewModel(
         factory = DailyContentViewModel.provideFactory(LocalContext.current)
-    ),
-    weatherViewModel: WeatherViewModel = viewModel()
+    )
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageOfTheDay by viewModel.imageOfTheDay.collectAsState()
@@ -74,12 +83,18 @@ fun DailyContent(
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
     val intentionSuggestions by viewModel.intentionSuggestions.collectAsState()
-    val weatherInfo by weatherViewModel.weather.collectAsState()
+    
+    val weatherInfo by viewModel.weather.collectAsState()
+    val city by viewModel.city.collectAsState()
+    val isWeatherLoading by viewModel.isLoading.collectAsState()
+    val weatherError by viewModel.error.collectAsState()
 
-    LaunchedEffect(weatherInfo) {
-        val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
-        viewModel.updateIntentionSuggestionContext(weatherString)
+    val notificationSettings by viewModel.notificationSettings.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadWeather()
     }
+
     val allImages by viewModel.allImages.collectAsState()
 
     var textFieldValue by remember { mutableStateOf("") }
@@ -87,12 +102,22 @@ fun DailyContent(
     var showManageQuotesDialog by remember { mutableStateOf(false) }
     var showArchiveIntentionsDialog by remember { mutableStateOf(false) }
     var showManageImagesDialog by remember { mutableStateOf(false) }
+    var showNotificationSettingsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            IconButton(onClick = { showNotificationSettingsDialog = true }) {
+                Icon(Icons.Default.Notifications, contentDescription = "Notification Settings")
+            }
+        }
+
         QuoteOfTheDayCard(
             quote = quote,
             onAddQuoteClick = { showAddQuoteDialog = true },
@@ -125,7 +150,15 @@ fun DailyContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        WeatherScreen(vm = weatherViewModel)
+        
+        WeatherCard(
+            weather = weatherInfo,
+            city = city,
+            isLoading = isWeatherLoading,
+            error = weatherError,
+            onCityChange = { viewModel.setCity(it) },
+            onRefresh = { viewModel.loadWeather() }
+        )
     }
 
     if (showAddQuoteDialog) {
@@ -158,6 +191,144 @@ fun DailyContent(
             onDeleteImage = { viewModel.deleteImage(it) },
             onAddImageFromUri = { uri -> viewModel.addImageFromUri(uri) }
         )
+    }
+    if (showNotificationSettingsDialog) {
+        NotificationSettingsDialog(
+            settings = notificationSettings,
+            onDismiss = { showNotificationSettingsDialog = false },
+            onSave = { enabled, hour, minute ->
+                viewModel.updateNotificationSettings(enabled, hour, minute)
+                showNotificationSettingsDialog = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationSettingsDialog(
+    settings: Triple<Boolean, Int, Int>,
+    onDismiss: () -> Unit,
+    onSave: (Boolean, Int, Int) -> Unit
+) {
+    var enabled by remember { mutableStateOf(settings.first) }
+    val timePickerState = rememberTimePickerState(
+        initialHour = settings.second,
+        initialMinute = settings.third,
+        is24Hour = false
+    )
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onSave(enabled, timePickerState.hour, timePickerState.minute)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Notification Settings") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Enable Daily Notification")
+                    Switch(checked = enabled, onCheckedChange = { enabled = it })
+                }
+                
+                if (enabled) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TimePicker(state = timePickerState)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                        onSave(enabled, timePickerState.hour, timePickerState.minute)
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else {
+                    onSave(enabled, timePickerState.hour, timePickerState.minute)
+                }
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun WeatherCard(
+    weather: WeatherInfo?,
+    city: String,
+    isLoading: Boolean,
+    error: String?,
+    onCityChange: (String) -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Weather", style = MaterialTheme.typography.headlineSmall)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = city,
+                onValueChange = onCityChange,
+                label = { Text("City") },
+                placeholder = { Text("e.g., Toronto") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onRefresh,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isLoading) "Loading..." else "Search")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (error != null) {
+                Text(
+                    text = "Error: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (weather == null && isLoading) {
+                Text("Loading...", style = MaterialTheme.typography.bodyMedium)
+            } else if (weather != null) {
+                Text("Temp: ${weather.temperatureC} C", style = MaterialTheme.typography.bodyMedium)
+                Text("Wind: ${weather.windSpeedKmh} km/h", style = MaterialTheme.typography.bodyMedium)
+                Text("Condition: ${weather.condition}", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 }
 
@@ -704,15 +875,17 @@ fun ArchiveIntentionsDialog(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = intention.text,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                                 if (intention.reflection != null) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         "Reflection: ${intention.reflection}",
-                                        style = MaterialTheme.typography.bodySmall
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                }
-                                TextButton(onClick = { intentionToReflectOn = intention }) {
-                                    Text(if (intention.reflection != null) "Edit reflection" else "Add reflection")
                                 }
                             }
                         }

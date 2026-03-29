@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.WbSunny
@@ -65,7 +64,6 @@ fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
                 AppDestinations.DASHBOARD -> AnalyticsDashboard(Modifier.padding(innerPadding))
                 AppDestinations.AGGREGATOR -> AggregatorScreen(Modifier.padding(innerPadding))
                 AppDestinations.RSS_FEED -> RssFeedScreen(Modifier.padding(innerPadding))
-                AppDestinations.WEATHER -> WeatherScreen(Modifier.padding(innerPadding))
             }
         }
     }
@@ -75,8 +73,7 @@ enum class AppDestinations(val label: String, val icon: ImageVector) {
     DAILY_CONTENT("Daily", Icons.Default.WbSunny),
     DASHBOARD("Dashboard", Icons.Default.BarChart),
     AGGREGATOR("Aggregator", Icons.Default.Newspaper),
-    RSS_FEED("RSS", Icons.Default.RssFeed),
-    WEATHER("Weather", Icons.Default.Cloud)
+    RSS_FEED("RSS", Icons.Default.RssFeed)
 }
 
 @PreviewScreenSizes

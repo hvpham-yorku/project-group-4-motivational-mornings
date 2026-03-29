@@ -22,7 +22,11 @@ class DefaultAggregatorWebScraper(
                 }
                 val doc = Jsoup.connect(normalized)
                     .userAgent(USER_AGENT)
-                    .timeout(25_000)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                    .header("Accept-Language", "en-US,en;q=0.5")
+                    .header("Cache-Control", "no-cache")
+                    .header("Pragma", "no-cache")
+                    .timeout(30_000)
                     .followRedirects(true)
                     .get()
                 NewsHeadlineExtractor.extract(doc)
@@ -30,9 +34,10 @@ class DefaultAggregatorWebScraper(
         }
 
     companion object {
+        // Using a modern Desktop User Agent which often avoids "app-only" or simplified mobile-only redirects
         private const val USER_AGENT =
-            "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 " +
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
         internal fun normalizePageUrl(raw: String): String {
             val trimmed = raw.trim()
