@@ -37,8 +37,8 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.DASHBOARD.icon
 
-        // Then: Icon should be Home icon
-        assertEquals(Icons.Default.Home, icon)
+        // Then: Icon should be DateRange icon
+        assertEquals(Icons.Default.DateRange, icon)
     }
 
     @Test
@@ -57,8 +57,8 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.DAILY_CONTENT.icon
 
-        // Then: Icon should be DateRange icon
-        assertEquals(Icons.Default.DateRange, icon)
+        // Then: Icon should be Home icon
+        assertEquals(Icons.Default.Home, icon)
     }
 
     @Test

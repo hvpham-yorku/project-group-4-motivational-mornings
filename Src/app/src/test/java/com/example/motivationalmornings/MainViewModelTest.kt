@@ -19,23 +19,23 @@ class MainViewModelTest {
     }
 
     @Test
-    fun initialDestination_isDashboard() = runTest {
+    fun initialDestination_isDailyContent() = runTest {
         // Given: ViewModel is initialized
         // When: Getting current destination
         val destination = viewModel.currentDestination.first()
 
-        // Then: Default destination should be DASHBOARD
-        assertEquals(AppDestinations.DASHBOARD, destination)
+        // Then: Default destination should be DAILY_CONTENT
+        assertEquals(AppDestinations.DAILY_CONTENT, destination)
     }
 
     @Test
-    fun setCurrentDestination_updatesToDailyContent() = runTest {
-        // Given: ViewModel is initialized with DASHBOARD
-        // When: Setting destination to DAILY_CONTENT
-        viewModel.setCurrentDestination(AppDestinations.DAILY_CONTENT)
+    fun setCurrentDestination_updatesToDashboard() = runTest {
+        // Given: ViewModel is initialized with DAILY_CONTENT
+        // When: Setting destination to DASHBOARD
+        viewModel.setCurrentDestination(AppDestinations.DASHBOARD)
 
-        // Then: Current destination should be DAILY_CONTENT
-        assertEquals(AppDestinations.DAILY_CONTENT, viewModel.currentDestination.value)
+        // Then: Current destination should be DASHBOARD
+        assertEquals(AppDestinations.DASHBOARD, viewModel.currentDestination.value)
     }
 
     @Test
@@ -62,14 +62,14 @@ class MainViewModelTest {
     fun setCurrentDestination_canChangeMultipleTimes() = runTest {
         // Given: ViewModel is initialized
         // When: Changing destinations multiple times
-        viewModel.setCurrentDestination(AppDestinations.DAILY_CONTENT)
-        assertEquals(AppDestinations.DAILY_CONTENT, viewModel.currentDestination.value)
+        viewModel.setCurrentDestination(AppDestinations.DASHBOARD)
+        assertEquals(AppDestinations.DASHBOARD, viewModel.currentDestination.value)
 
         viewModel.setCurrentDestination(AppDestinations.RSS_FEED)
         assertEquals(AppDestinations.RSS_FEED, viewModel.currentDestination.value)
 
-        viewModel.setCurrentDestination(AppDestinations.DASHBOARD)
-        // Then: Should return to DASHBOARD
-        assertEquals(AppDestinations.DASHBOARD, viewModel.currentDestination.value)
+        viewModel.setCurrentDestination(AppDestinations.DAILY_CONTENT)
+        // Then: Should return to DAILY_CONTENT
+        assertEquals(AppDestinations.DAILY_CONTENT, viewModel.currentDestination.value)
     }
 }

@@ -61,11 +61,11 @@ fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
-                AppDestinations.DASHBOARD -> AnalyticsDashboard(
+                AppDestinations.DAILY_CONTENT -> DailyContent(
                     modifier = Modifier.padding(innerPadding)
                 )
 
-                AppDestinations.DAILY_CONTENT -> DailyContent(
+                AppDestinations.DASHBOARD -> AnalyticsDashboard(
                     modifier = Modifier.padding(innerPadding)
                 )
 
@@ -86,8 +86,8 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    DASHBOARD("Dashboard", Icons.Default.Home),
-    DAILY_CONTENT("Daily Content", Icons.Default.DateRange),
+    DAILY_CONTENT("Daily Content", Icons.Default.Home),
+    DASHBOARD("Dashboard", Icons.Default.DateRange),
     AGGREGATOR("Aggregator", Icons.AutoMirrored.Filled.List),
     RSS_FEED("RSS Feed", Icons.Default.Favorite),
 
