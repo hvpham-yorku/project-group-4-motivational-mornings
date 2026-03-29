@@ -194,7 +194,7 @@ fun PatternCard(pattern: IntentionPattern) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)
         )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -325,7 +325,10 @@ fun KeywordIntentionsDialog(
 @Composable
 fun SummaryStat(label: String, value: String) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
