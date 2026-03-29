@@ -6,6 +6,7 @@ import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -22,13 +23,15 @@ class HardcodedContentRepositoryTest {
     }
 
     @Test
-    fun getImageResId_returnsOneOfDayImages() = runTest {
+    fun getImageOfTheDay_returnsOneOfDayImages() = runTest {
         val repo = HardcodedContentRepository()
         val validIds = listOf(
             R.drawable.imageotd, R.drawable.imageotd2, R.drawable.imageotd3,
             R.drawable.imageotd4, R.drawable.imageotd5, R.drawable.imageotd6
         )
-        assertTrue(repo.getImageResId().first() in validIds)
+        val image = repo.getImageOfTheDay().first()
+        assertNotNull(image)
+        assertTrue(image?.drawableResId in validIds)
     }
 
     @Test
@@ -47,9 +50,6 @@ class HardcodedContentRepositoryTest {
         val repo = HardcodedContentRepository()
         val quotes = repo.getAllQuotes().first()
         assertEquals(5, quotes.size)
-        // Default quotes are added with IDs 1 to 5. Since saveQuote adds to the top (index 0)
-        // in the previous version, but here we just check initial state.
-        // The sorted list should contain the first default quote.
         assertTrue(quotes.any { it.text == "The best way to predict the future is to create it." })
     }
 

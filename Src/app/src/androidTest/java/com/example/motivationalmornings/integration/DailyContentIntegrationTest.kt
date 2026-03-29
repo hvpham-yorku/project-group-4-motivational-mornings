@@ -8,6 +8,7 @@ import com.example.motivationalmornings.BusinessLogic.Analytics
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
+import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,7 @@ class DailyContentIntegrationTest {
         defaultQuotes.forEach { text ->
             db.dailyContentDao().insertQuote(QuoteOfTheDay(text = text))
         }
+        db.dailyContentDao().insertImage(ImageOfTheDay(uid = 1, drawableResId = com.example.motivationalmornings.R.drawable.imageotd))
 
         val repository = RoomContentRepository(db.dailyContentDao())
         val analytics = Analytics(FakeAnalyticsRepository())
@@ -70,7 +72,7 @@ class DailyContentIntegrationTest {
     @Test
     fun viewModel_initialization_loadsQuoteFromDb() = runTest(testDispatcher) {
         // We need to trigger the lazy StateFlow by accessing it or subscribing
-        val quote = viewModel.quote.first { it != "Loading quote..." }
+        val quote = viewModel.quote.first { it != "Loading quote..." && it.isNotBlank() }
         assertTrue("Quote should be one of the defaults: $quote", quote in defaultQuotes)
     }
 
