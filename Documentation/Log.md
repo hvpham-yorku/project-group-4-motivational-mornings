@@ -34,6 +34,7 @@
  
  ## Monday March 2nd
  - Discussed progress in sprint 2
+ - About 1/3 of the way through the features for sprint 2
  
  ## Monday March 9th
  - Discussed what elements were missing in interation 2 that we could add with the extension
@@ -41,3 +42,18 @@
  - Jordi: Adjust documentation, review unit tests, create integration tests, minor adjustments to implemented features
  - Arsh: Add accidentally removed weather feature
  - Hassan: Add database support for image of the day, make RSS items clickable
+ 
+ ## Monday March 16th
+ - Planning for sprint 3
+ - Examined what elements were missing from sprint 2
+ - Assigned user stories for sprint 3
+ - Jordi: Cross-feature analytics, widget, input website into aggregator, reflections for intentions
+ - Arsh: User defined info, keyword search for aggregator, notifications
+ - Hassan: Like/dislike for daily content, display aggregator content upon first opening the tab, handle stock trading in aggregator
+ 
+ ## Monday March 23rd
+ - Discussed progress through sprint
+ - Discussed unit and integration tests required, as well as division of work
+ - Discussed lab 5
+ - Preperations for final release of app
+ - Discussed documentation tasks remaining in preparation for final release
