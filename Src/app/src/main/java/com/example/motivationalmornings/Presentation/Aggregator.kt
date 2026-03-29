@@ -152,6 +152,9 @@ private fun AggregatorArticleCard(
             .padding(vertical = 8.dp)
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

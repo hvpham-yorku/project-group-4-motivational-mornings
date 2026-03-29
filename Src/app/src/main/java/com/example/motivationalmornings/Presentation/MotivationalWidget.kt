@@ -33,6 +33,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.ui.theme.MorningOnPrimaryContainer
+import com.example.motivationalmornings.ui.theme.MorningOnSecondaryContainer
+import com.example.motivationalmornings.ui.theme.MorningPrimary
+import com.example.motivationalmornings.ui.theme.MorningSecondary
+import com.example.motivationalmornings.ui.theme.MorningSky
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
@@ -68,7 +73,7 @@ class MotivationalWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .appWidgetBackground()
-                .background(ColorProvider(Color.White))
+                .background(ColorProvider(MorningSky))
                 .padding(12.dp),
             verticalAlignment = Alignment.Vertical.Top,
             horizontalAlignment = Alignment.Horizontal.Start
@@ -82,7 +87,7 @@ class MotivationalWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = ColorProvider(Color.Black)
+                        color = ColorProvider(MorningOnPrimaryContainer)
                     ),
                     modifier = GlanceModifier
                         .defaultWeight()
@@ -101,12 +106,12 @@ class MotivationalWidget : GlanceAppWidget() {
                 text = "Quote of the Day:",
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
-                    color = ColorProvider(Color(0xFF0099CC)) // holo_blue_dark
+                    color = ColorProvider(MorningPrimary)
                 )
             )
             Text(
                 text = "\"$quote\"",
-                style = TextStyle(color = ColorProvider(Color.Black))
+                style = TextStyle(color = ColorProvider(MorningOnPrimaryContainer))
             )
             
             Spacer(modifier = GlanceModifier.height(12.dp))
@@ -115,27 +120,27 @@ class MotivationalWidget : GlanceAppWidget() {
                 text = "Today's Intentions:",
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
-                    color = ColorProvider(Color(0xFF669900)) // holo_green_dark
+                    color = ColorProvider(MorningSecondary)
                 )
             )
             
             if (intentions.isEmpty()) {
                 Text(
                     text = "No intentions set yet.",
-                    style = TextStyle(color = ColorProvider(Color.Gray))
+                    style = TextStyle(color = ColorProvider(MorningOnSecondaryContainer))
                 )
             } else {
                 intentions.take(3).forEach { intention ->
                     Text(
                         text = "• $intention",
-                        style = TextStyle(color = ColorProvider(Color.Black)),
+                        style = TextStyle(color = ColorProvider(MorningOnPrimaryContainer)),
                         maxLines = 1
                     )
                 }
                 if (intentions.size > 3) {
                     Text(
                         text = "... and ${intentions.size - 3} more",
-                        style = TextStyle(color = ColorProvider(Color.Gray))
+                        style = TextStyle(color = ColorProvider(MorningOnSecondaryContainer))
                     )
                 }
             }
