@@ -3,7 +3,6 @@ package com.example.motivationalmornings
 import com.example.motivationalmornings.Presentation.AppDestinations
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.WbSunny
@@ -18,8 +17,8 @@ class AppDestinationTest {
         // When: Getting all entries
         val entries = AppDestinations.entries
 
-        // Then: Should have exactly 5 destinations
-        assertEquals(5, entries.size)
+        // Then: Should have exactly 4 destinations
+        assertEquals(4, entries.size)
     }
 
     @Test
@@ -103,26 +102,6 @@ class AppDestinationTest {
     }
 
     @Test
-    fun weather_hasCorrectLabel() {
-        // Given: WEATHER destination
-        // When: Getting label
-        val label = AppDestinations.WEATHER.label
-
-        // Then: Label should be "Weather"
-        assertEquals("Weather", label)
-    }
-
-    @Test
-    fun weather_hasCorrectIcon() {
-        // Given: WEATHER destination
-        // When: Getting icon
-        val icon = AppDestinations.WEATHER.icon
-
-        // Then: Icon should be Cloud icon
-        assertEquals(Icons.Default.Cloud, icon)
-    }
-
-    @Test
     fun allDestinations_haveUniqueLabels() {
         // Given: All app destinations
         val labels = AppDestinations.entries.map { it.label }
@@ -179,16 +158,6 @@ class AppDestinationTest {
 
         // Then: Should return RSS_FEED destination
         assertEquals(AppDestinations.RSS_FEED, destination)
-    }
-
-    @Test
-    fun valueOf_findsWeather() {
-        // Given: String "WEATHER"
-        // When: Getting enum by name
-        val destination = AppDestinations.valueOf("WEATHER")
-
-        // Then: Should return WEATHER destination
-        assertEquals(AppDestinations.WEATHER, destination)
     }
 
     @Test(expected = IllegalArgumentException::class)
