@@ -1,9 +1,148 @@
+//package com.example.motivationalmornings.Persistence
+//
+//import android.content.Context
+//import androidx.room.ColumnInfo
+//import androidx.room.Dao
+//import androidx.room.Database
+//import androidx.room.Entity
+//import androidx.room.Insert
+//import androidx.room.OnConflictStrategy
+//import androidx.room.PrimaryKey
+//import androidx.room.Query
+//import androidx.room.Room
+//import androidx.room.RoomDatabase
+//import androidx.room.Delete
+//import androidx.room.migration.Migration
+//import androidx.sqlite.db.SupportSQLiteDatabase
+//import kotlinx.coroutines.CoroutineScope
+//import kotlinx.coroutines.Dispatchers
+//import kotlinx.coroutines.flow.Flow
+//import kotlinx.coroutines.launch
+//
+//@Entity(tableName = "intentions")
+//data class Intention(
+//    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+//    @ColumnInfo(name = "text") val text: String,
+//    @ColumnInfo(name = "date") val date: String,
+//    @ColumnInfo(name = "reflection") val reflection: String? = null
+//)
+//
+//@Entity(tableName = "quotes")
+//data class QuoteOfTheDay(
+//    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+//    @ColumnInfo(name = "text") val text: String,
+//)
+//
+//@Entity(tableName = "rss_feed_urls")
+//data class RssFeedUrl(
+//    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+//    @ColumnInfo(name = "url") val url: String,
+//)
+//
+//@Dao
+//interface DailyContentDao {
+//    @Query("SELECT text FROM intentions WHERE date = :date ORDER BY uid DESC")
+//    fun getIntentionsByDate(date: String): Flow<List<String>>
+//
+//    @Query("SELECT * FROM intentions ORDER BY date DESC, uid DESC")
+//    fun getAllIntentions(): Flow<List<Intention>>
+//
+//    @Query("SELECT text FROM quotes ORDER BY RANDOM() LIMIT 1")
+//    fun getRandomQuote(): Flow<String?>
+//
+//    @Query("SELECT * FROM quotes ORDER BY uid DESC")
+//    fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
+//
+//    @Insert
+//    suspend fun insertIntention(intention: Intention)
+//
+//    @Query("UPDATE intentions SET reflection = :reflection WHERE uid = :uid")
+//    suspend fun updateReflection(uid: Int, reflection: String)
+//
+//    @Insert
+//    suspend fun insertQuote(quote: QuoteOfTheDay)
+//
+//    @Delete
+//    suspend fun deleteQuote(quote: QuoteOfTheDay)
+//
+//    @Query("SELECT url FROM rss_feed_urls ORDER BY uid ASC")
+//    fun getRssFeedUrls(): Flow<List<String>>
+//
+//    @Insert(onConflict = OnConflictStrategy.IGNORE)
+//    suspend fun insertRssFeedUrl(rssFeedUrl: RssFeedUrl)
+//
+//    @Query("DELETE FROM rss_feed_urls WHERE url = :url")
+//    suspend fun deleteRssFeedUrl(url: String)
+//}
+//
+//@Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 3)
+//abstract class AppDatabase : RoomDatabase() {
+//    abstract fun dailyContentDao(): DailyContentDao
+//
+//    companion object {
+//        @Volatile
+//        private var INSTANCE: AppDatabase? = null
+//
+//        private val MIGRATION_1_2 = object : Migration(1, 2) {
+//            override fun migrate(db: SupportSQLiteDatabase) {
+//                db.execSQL(
+//                    "CREATE TABLE IF NOT EXISTS rss_feed_urls (uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL)"
+//                )
+//            }
+//        }
+//
+//        private val MIGRATION_2_3 = object : Migration(2, 3) {
+//            override fun migrate(db: SupportSQLiteDatabase) {
+//                db.execSQL(
+//                    "ALTER TABLE intentions ADD COLUMN reflection TEXT"
+//                )
+//            }
+//        }
+//
+//        fun getDatabase(context: Context): AppDatabase {
+//            return INSTANCE ?: synchronized(this) {
+//                val instance = Room.databaseBuilder(
+//                    context.applicationContext,
+//                    AppDatabase::class.java,
+//                    "motivational_mornings_db"
+//                )
+//                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+//                    .addCallback(object : RoomDatabase.Callback() {
+//                        override fun onCreate(db: SupportSQLiteDatabase) {
+//                            super.onCreate(db)
+//                            CoroutineScope(Dispatchers.IO).launch {
+//                                INSTANCE?.let { database ->
+//                                    val dao = database.dailyContentDao()
+//                                    val defaultQuotes = listOf(
+//                                        "The best way to predict the future is to create it.",
+//                                        "Every morning is a new opportunity to become a better version of yourself.",
+//                                        "Small steps every day lead to big changes.",
+//                                        "You are capable of amazing things today.",
+//                                        "Start where you are. Use what you have. Do what you can."
+//                                    )
+//                                    defaultQuotes.forEach { text ->
+//                                        dao.insertQuote(QuoteOfTheDay(text = text))
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    })
+//                    .build()
+//                INSTANCE = instance
+//                instance
+//            }
+//        }
+//    }
+//}
+
+
 package com.example.motivationalmornings.Persistence
 
 import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -11,13 +150,14 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.Delete
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+
+// ─── Entities ────────────────────────────────────────────────────────────────
 
 @Entity(tableName = "intentions")
 data class Intention(
@@ -41,19 +181,50 @@ data class RssFeedUrl(
     @ColumnInfo(name = "url") val url: String,
 )
 
+// NEW ENTITIES
+@Entity(tableName = "quote_feedback")
+data class QuoteFeedback(
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+    @ColumnInfo(name = "quote_id") val quoteId: Int,
+    @ColumnInfo(name = "reaction") val reaction: String, // "LIKE" or "DISLIKE"
+    @ColumnInfo(name = "created_at") val createdAt: String
+)
+
+@Entity(tableName = "image_feedback")
+data class ImageFeedback(
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+    @ColumnInfo(name = "image_id") val imageId: Int,
+    @ColumnInfo(name = "reaction") val reaction: String, // "LIKE" or "DISLIKE"
+    @ColumnInfo(name = "created_at") val createdAt: String
+)
+
+/**
+ * Represents an image in the image-of-the-day pool.
+ *
+ * Exactly one of [drawableResId] or [filePath] will be non-null:
+ *  - [drawableResId] is set for the built-in seeded images (res/drawable).
+ *  - [filePath]      is set for user-submitted images stored in internal storage.
+ */
+@Entity(tableName = "images_of_the_day")
+data class ImageOfTheDay(
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+    /** Non-null for drawable-backed images (e.g. R.drawable.imageotd). */
+    @ColumnInfo(name = "drawable_res_id") val drawableResId: Int? = null,
+    /** Non-null for user-uploaded images; absolute path inside filesDir. */
+    @ColumnInfo(name = "file_path") val filePath: String? = null,
+)
+
+// ─── DAO ─────────────────────────────────────────────────────────────────────
+
 @Dao
 interface DailyContentDao {
+
+    // Intentions
     @Query("SELECT text FROM intentions WHERE date = :date ORDER BY uid DESC")
     fun getIntentionsByDate(date: String): Flow<List<String>>
 
     @Query("SELECT * FROM intentions ORDER BY date DESC, uid DESC")
     fun getAllIntentions(): Flow<List<Intention>>
-
-    @Query("SELECT text FROM quotes ORDER BY RANDOM() LIMIT 1")
-    fun getRandomQuote(): Flow<String?>
-
-    @Query("SELECT * FROM quotes ORDER BY uid DESC")
-    fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
 
     @Insert
     suspend fun insertIntention(intention: Intention)
@@ -61,12 +232,17 @@ interface DailyContentDao {
     @Query("UPDATE intentions SET reflection = :reflection WHERE uid = :uid")
     suspend fun updateReflection(uid: Int, reflection: String)
 
+    // Quotes
+    @Query("SELECT * FROM quotes ORDER BY uid DESC")
+    fun getAllQuotes(): Flow<List<QuoteOfTheDay>>
+
     @Insert
     suspend fun insertQuote(quote: QuoteOfTheDay)
 
     @Delete
     suspend fun deleteQuote(quote: QuoteOfTheDay)
 
+    // RSS feed URLs
     @Query("SELECT url FROM rss_feed_urls ORDER BY uid ASC")
     fun getRssFeedUrls(): Flow<List<String>>
 
@@ -75,9 +251,40 @@ interface DailyContentDao {
 
     @Query("DELETE FROM rss_feed_urls WHERE url = :url")
     suspend fun deleteRssFeedUrl(url: String)
+
+    // Images of the day
+    @Query("SELECT * FROM images_of_the_day ORDER BY uid ASC")
+    fun getAllImages(): Flow<List<ImageOfTheDay>>
+
+    @Query("SELECT COUNT(*) FROM images_of_the_day")
+    suspend fun getImageCount(): Int
+
+    @Insert
+    suspend fun insertImage(image: ImageOfTheDay)
+
+    @Delete
+    suspend fun deleteImage(image: ImageOfTheDay)
+
+    // new
+    @Insert
+    suspend fun insertQuoteFeedback(feedback: QuoteFeedback)
+
+    @Insert
+    suspend fun insertImageFeedback(feedback: ImageFeedback)
+
+    @Query("SELECT * FROM quote_feedback ORDER BY uid DESC")
+    fun getAllQuoteFeedback(): Flow<List<QuoteFeedback>>
+
+    @Query("SELECT * FROM image_feedback ORDER BY uid DESC")
+    fun getAllImageFeedback(): Flow<List<ImageFeedback>>
 }
 
-@Database(entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class], version = 5)
+// ─── Database ─────────────────────────────────────────────────────────────────
+
+@Database(
+    entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class, ImageOfTheDay::class, QuoteFeedback::class, ImageFeedback::class],
+    version = 5
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyContentDao(): DailyContentDao
 
@@ -85,18 +292,52 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        // v1 → v2: add rss_feed_urls table
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS rss_feed_urls (uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL)"
+                    "CREATE TABLE IF NOT EXISTS rss_feed_urls " +
+                            "(uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL)"
                 )
             }
         }
 
+        // v2 → v3: add reflection column to intentions
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE intentions ADD COLUMN reflection TEXT")
+            }
+        }
+
+        // v3 → v4: add images_of_the_day table
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE intentions ADD COLUMN reflection TEXT"
+                    "CREATE TABLE IF NOT EXISTS images_of_the_day (" +
+                            "uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "drawable_res_id INTEGER, " +
+                            "file_path TEXT" +
+                            ")"
+                )
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS quote_feedback (" +
+                            "uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "quote_id INTEGER NOT NULL, " +
+                            "reaction TEXT NOT NULL, " +
+                            "created_at TEXT NOT NULL)"
+                )
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS image_feedback (" +
+                            "uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "image_id INTEGER NOT NULL, " +
+                            "reaction TEXT NOT NULL, " +
+                            "created_at TEXT NOT NULL)"
                 )
             }
         }
@@ -131,24 +372,64 @@ abstract class AppDatabase : RoomDatabase() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 INSTANCE?.let { database ->
                                     val dao = database.dailyContentDao()
-                                    val defaultQuotes = listOf(
-                                        "The best way to predict the future is to create it.",
-                                        "Every morning is a new opportunity to become a better version of yourself.",
-                                        "Small steps every day lead to big changes.",
-                                        "You are capable of amazing things today.",
-                                        "Start where you are. Use what you have. Do what you can."
-                                    )
-                                    defaultQuotes.forEach { text ->
-                                        dao.insertQuote(QuoteOfTheDay(text = text))
-                                    }
+                                    seedDefaultData(dao)
                                 }
                             }
                         }
                     })
                     .build()
                 INSTANCE = instance
+
+                // Seed images on first run if the table is empty (handles migration from v3).
+                CoroutineScope(Dispatchers.IO).launch {
+                    seedImagesIfEmpty(instance.dailyContentDao())
+                }
+
                 instance
             }
         }
+
+        private suspend fun seedDefaultData(dao: DailyContentDao) {
+            val defaultQuotes = listOf(
+                "The best way to predict the future is to create it.",
+                "Every morning is a new opportunity to become a better version of yourself.",
+                "Small steps every day lead to big changes.",
+                "You are capable of amazing things today.",
+                "Start where you are. Use what you have. Do what you can."
+            )
+            defaultQuotes.forEach { text -> dao.insertQuote(QuoteOfTheDay(text = text)) }
+            seedImagesIfEmpty(dao)
+        }
+
+        /**
+         * Seeds the 6 built-in drawable images if the table is empty.
+         * Called both on fresh install (onCreate) and after a migration from v3 where
+         * the table didn't exist yet.
+         */
+        suspend fun seedImagesIfEmpty(dao: DailyContentDao) {
+            if (dao.getImageCount() == 0) {
+                DEFAULT_DRAWABLE_IMAGE_RES_IDS.forEach { resId ->
+                    dao.insertImage(ImageOfTheDay(drawableResId = resId))
+                }
+            }
+        }
+
+        /**
+         * The 6 built-in res/drawable images. Keep in sync with actual drawable resources.
+         * Using numeric constants here to avoid a Context dependency; callers resolve them
+         * via painterResource / BitmapFactory as needed.
+         *
+         * NOTE: Replace these placeholder values with the real R.drawable.* int constants
+         * in your project (they are generated at compile time and not available here at
+         * definition time without a Context).  The actual resolution happens in the UI layer.
+         */
+        val DEFAULT_DRAWABLE_IMAGE_RES_IDS: List<Int> = listOf(
+            com.example.motivationalmornings.R.drawable.imageotd,
+            com.example.motivationalmornings.R.drawable.imageotd2,
+            com.example.motivationalmornings.R.drawable.imageotd3,
+            com.example.motivationalmornings.R.drawable.imageotd4,
+            com.example.motivationalmornings.R.drawable.imageotd5,
+            com.example.motivationalmornings.R.drawable.imageotd6,
+        )
     }
 }

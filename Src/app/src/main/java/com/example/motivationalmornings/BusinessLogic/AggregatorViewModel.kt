@@ -1,5 +1,6 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.BusinessLogic
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.motivationalmornings.Persistence.AggregatorArticle
@@ -25,6 +26,34 @@ class AggregatorViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val prefsName = "aggregator_prefs"
+    private val keywordsKey = "keywords"
+
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+
+    fun loadKeywords(context: Context): String {
+        return prefs(context).getString(keywordsKey, "") ?: ""
+    }
+
+    fun saveKeywords(context: Context, keywords: String) {
+        prefs(context).edit().putString(keywordsKey, keywords).apply()
+    }
+
+    fun filterArticles(articles: List<AggregatorArticle>, keywordText: String): List<AggregatorArticle> {
+        val keywords = keywordText
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        if (keywords.isEmpty()) return articles
+
+        return articles.filter { article ->
+            val haystack = (article.title + " " + article.url).lowercase()
+            keywords.any { k -> haystack.contains(k.lowercase()) }
+        }
+    }
 
     fun onSourceUrlChanged(url: String) {
         _sourceUrl.value = url
