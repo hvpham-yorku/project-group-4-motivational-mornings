@@ -14,11 +14,11 @@ import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
+import com.example.motivationalmornings.Persistence.UserPrefs
 import com.example.motivationalmornings.Persistence.weather.OpenMeteoWeatherRepository
 import com.example.motivationalmornings.Persistence.weather.WeatherInfo
 import com.example.motivationalmornings.Persistence.weather.WeatherRepository
 import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
-import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -127,6 +127,23 @@ class DailyContentViewModel(
     //new addition
     val quoteOfTheDay: StateFlow<QuoteOfTheDay?> = contentRepository.getQuoteOfTheDay()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // ── Notification Settings ─────────────────────────────────────────────────
+
+    val notificationSettings: StateFlow<Triple<Boolean, Int, Int>> = UserPrefs.notificationSettingsFlow(appContext)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Triple(false, 8, 0))
+
+    fun updateNotificationSettings(enabled: Boolean, hour: Int, minute: Int) {
+        viewModelScope.launch {
+            UserPrefs.saveNotificationSettings(appContext, enabled, hour, minute)
+            if (enabled) {
+                NotificationWorker.schedule(appContext, hour, minute)
+            } else {
+                NotificationWorker.cancel(appContext)
+            }
+        }
+    }
+
     // ── Intentions ────────────────────────────────────────────────────────────
 
     fun saveReflection(uid: Int, reflection: String) {
