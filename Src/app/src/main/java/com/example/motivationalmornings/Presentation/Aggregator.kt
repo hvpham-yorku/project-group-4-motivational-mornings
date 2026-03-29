@@ -54,6 +54,9 @@ fun AggregatorScreen(
     }
 
     val filteredArticles = viewModel.filterArticles(articles, keywordText)
+    val hasActiveKeywords = keywordText.split(",").map { it.trim() }.any { it.isNotBlank() }
+    val showNoKeywordMatches =
+        filteredArticles.isEmpty() && articles.isNotEmpty() && hasActiveKeywords
 
     Column(
         modifier = modifier
