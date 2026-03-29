@@ -7,12 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.motivationalmornings.MainViewModel
+import com.example.motivationalmornings.BusinessLogic.MainViewModel
 import com.example.motivationalmornings.ui.theme.MotivationalMorningsTheme
 
 class MainActivity : ComponentActivity() {
@@ -38,61 +38,51 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@PreviewScreenSizes
 @Composable
 fun MotivationalMorningsApp(viewModel: MainViewModel = viewModel()) {
     val currentDestination by viewModel.currentDestination.collectAsState()
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestinations.entries.forEach { destination ->
                 item(
                     icon = {
                         Icon(
-                            it.icon,
-                            contentDescription = it.label
+                            imageVector = destination.icon,
+                            contentDescription = destination.label
                         )
                     },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { viewModel.setCurrentDestination(it) }
+                    label = { Text(destination.label) },
+                    selected = currentDestination == destination,
+                    onClick = { viewModel.setCurrentDestination(destination) }
                 )
             }
         }
     ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
-                AppDestinations.DAILY_CONTENT -> DailyContent(
-                    modifier = Modifier.padding(innerPadding)
-                )
-
-                AppDestinations.DASHBOARD -> AnalyticsDashboard(
-                    modifier = Modifier.padding(innerPadding)
-                )
-
-                AppDestinations.AGGREGATOR -> AggregatorScreen(
-                    modifier = Modifier.padding(innerPadding)
-                )
-
-                AppDestinations.RSS_FEED -> RssFeedScreen(
-                    modifier = Modifier.padding(innerPadding)
-                )
-
+                AppDestinations.DAILY_CONTENT -> DailyContent(Modifier.padding(innerPadding))
+                AppDestinations.DASHBOARD -> AnalyticsDashboard(Modifier.padding(innerPadding))
+                AppDestinations.AGGREGATOR -> AggregatorScreen(Modifier.padding(innerPadding))
+                AppDestinations.RSS_FEED -> RssFeedScreen(Modifier.padding(innerPadding))
+                AppDestinations.WEATHER -> WeatherScreen(Modifier.padding(innerPadding))
             }
         }
     }
 }
 
-enum class AppDestinations(
-    val label: String,
-    val icon: ImageVector,
-) {
-    DAILY_CONTENT("Daily Content", Icons.Default.Home),
-    DASHBOARD("Dashboard", Icons.Default.DateRange),
-    AGGREGATOR("Aggregator", Icons.AutoMirrored.Filled.List),
-    RSS_FEED("RSS Feed", Icons.Default.Favorite),
+enum class AppDestinations(val label: String, val icon: ImageVector) {
+    DAILY_CONTENT("Daily", Icons.Default.WbSunny),
+    DASHBOARD("Dashboard", Icons.Default.BarChart),
+    AGGREGATOR("Aggregator", Icons.Default.Newspaper),
+    RSS_FEED("RSS", Icons.Default.RssFeed),
+    WEATHER("Weather", Icons.Default.Cloud)
+}
 
+@PreviewScreenSizes
+@Composable
+fun MotivationalMorningsAppPreview() {
+    MotivationalMorningsTheme {
+        MotivationalMorningsApp()
+    }
 }

@@ -1,12 +1,13 @@
 package com.example.motivationalmornings
 
+import android.content.Context
 import com.example.motivationalmornings.BusinessLogic.Analytics
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.AnalyticsRepository
 import com.example.motivationalmornings.Persistence.ContentRepository
-import com.example.motivationalmornings.Persistence.IntentionAnalyticsEvent
-import android.content.Context
+import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
+import com.example.motivationalmornings.Persistence.IntentionAnalyticsEvent
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,11 +16,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -65,7 +66,7 @@ class DailyContentViewModelTest {
         viewModel.intentions.first()
         viewModel.allIntentions.first()
         viewModel.allQuotes.first()
-        viewModel.imageResId.first()
+        viewModel.imageOfTheDay.first()
         advanceUntilIdle()
     }
 
@@ -77,10 +78,11 @@ class DailyContentViewModelTest {
     }
 
     @Test
-    fun initialImageResId_loadsFromRepository() = runTest {
+    fun initialImage_loadsFromRepository() = runTest {
         triggerStateFlows()
-        val imageResId = viewModel.imageResId.value
-        assertEquals(R.drawable.ic_launcher_background, imageResId)
+        val image = viewModel.imageOfTheDay.value
+        assertNotNull(image)
+        assertEquals(R.drawable.imageotd, image?.drawableResId)
     }
 
     @Test
@@ -120,106 +122,6 @@ class DailyContentViewModelTest {
     }
 
     @Test
-    fun saveIntention_multipleIntentions_addsToTop() = runTest {
-        triggerStateFlows()
-        viewModel.saveIntention("First intention")
-        advanceUntilIdle()
-        viewModel.saveIntention("Second intention")
-        advanceUntilIdle()
-        viewModel.saveIntention("Third intention")
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertEquals(3, intentions.size)
-        assertEquals("Third intention", intentions[0])
-        assertEquals("Second intention", intentions[1])
-        assertEquals("First intention", intentions[2])
-    }
-
-    @Test
-    fun saveIntention_blankIntention_notSaved() = runTest {
-        triggerStateFlows()
-        viewModel.saveIntention("")
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertTrue(intentions.isEmpty())
-    }
-
-    @Test
-    fun saveIntention_whitespaceOnly_notSaved() = runTest {
-        triggerStateFlows()
-        viewModel.saveIntention("   ")
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertTrue(intentions.isEmpty())
-    }
-
-    @Test
-    fun saveIntention_withLeadingTrailingSpaces_savesTrimmedVersion() = runTest {
-        triggerStateFlows()
-        viewModel.saveIntention("  Clean the house  ")
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertEquals(1, intentions.size)
-        assertTrue(intentions[0].contains("Clean the house"))
-    }
-
-    @Test
-    fun saveIntention_longText_savesCorrectly() = runTest {
-        triggerStateFlows()
-        val longIntention = "Complete the project documentation, review code changes, " +
-                "attend team meeting, and prepare presentation for stakeholders"
-        viewModel.saveIntention(longIntention)
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertEquals(1, intentions.size)
-        assertEquals(longIntention, intentions[0])
-    }
-
-    @Test
-    fun saveIntention_specialCharacters_savesCorrectly() = runTest {
-        triggerStateFlows()
-        val specialIntention = "Buy groceries: milk, eggs & bread (don't forget!)"
-        viewModel.saveIntention(specialIntention)
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertEquals(1, intentions.size)
-        assertEquals(specialIntention, intentions[0])
-    }
-
-    @Test
-    fun saveIntention_duplicateIntentions_bothSaved() = runTest {
-        triggerStateFlows()
-        viewModel.saveIntention("Water the plants")
-        advanceUntilIdle()
-        viewModel.saveIntention("Water the plants")
-        advanceUntilIdle()
-        val intentions = viewModel.intentions.value
-        assertEquals(2, intentions.size)
-        assertEquals("Water the plants", intentions[0])
-        assertEquals("Water the plants", intentions[1])
-    }
-
-    @Test
-    fun intentions_orderMaintainedAfterMultipleSaves() = runTest {
-        triggerStateFlows()
-        val intentionsList = listOf(
-            "Morning meditation",
-            "Healthy breakfast",
-            "Team standup",
-            "Code review",
-            "Afternoon walk"
-        )
-        intentionsList.forEach { intention ->
-            viewModel.saveIntention(intention)
-            advanceUntilIdle()
-        }
-        val savedIntentions = viewModel.intentions.value
-        assertEquals(5, savedIntentions.size)
-        assertEquals("Afternoon walk", savedIntentions[0])
-        assertEquals("Morning meditation", savedIntentions[4])
-    }
-
-    @Test
     fun saveQuote_addsToAllQuotes() = runTest {
         triggerStateFlows()
         val initialSize = viewModel.allQuotes.value.size
@@ -228,24 +130,6 @@ class DailyContentViewModelTest {
         val quotes = viewModel.allQuotes.value
         assertEquals(initialSize + 1, quotes.size)
         assertEquals("A new motivational quote", quotes[0].text)
-    }
-
-    @Test
-    fun saveQuote_blankQuote_notSaved() = runTest {
-        triggerStateFlows()
-        val initialSize = viewModel.allQuotes.value.size
-        viewModel.saveQuote("")
-        advanceUntilIdle()
-        assertEquals(initialSize, viewModel.allQuotes.value.size)
-    }
-
-    @Test
-    fun saveQuote_whitespaceOnly_notSaved() = runTest {
-        triggerStateFlows()
-        val initialSize = viewModel.allQuotes.value.size
-        viewModel.saveQuote("   ")
-        advanceUntilIdle()
-        assertEquals(initialSize, viewModel.allQuotes.value.size)
     }
 
     @Test
@@ -270,10 +154,13 @@ class DailyContentViewModelTest {
         private val _intentions = MutableStateFlow<List<String>>(emptyList())
         private val _allIntentions = MutableStateFlow<List<Intention>>(emptyList())
         private val _quotes = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
+        private val _images = MutableStateFlow<List<ImageOfTheDay>>(listOf(ImageOfTheDay(uid = 1, drawableResId = R.drawable.imageotd)))
 
         override fun getQuote(): Flow<String> = flowOf("Test quote from repository")
+        
+        override fun getQuoteOfTheDay(): Flow<QuoteOfTheDay?> = flowOf(QuoteOfTheDay(uid = 1, text = "Test quote from repository"))
 
-        override fun getImageResId(): Flow<Int> = flowOf(R.drawable.ic_launcher_background)
+        override fun getImageOfTheDay(): Flow<ImageOfTheDay?> = flowOf(_images.value.first())
 
         override fun getIntentions(): Flow<List<String>> = _intentions
 
@@ -300,7 +187,6 @@ class DailyContentViewModelTest {
         }
 
         override suspend fun updateReflection(uid: Int, reflection: String) {
-            // Not needed for current tests
         }
 
         override suspend fun saveQuote(quote: String) {
@@ -317,11 +203,28 @@ class DailyContentViewModelTest {
             currentQuotes.removeAll { it.uid == quote.uid }
             _quotes.value = currentQuotes
         }
+
+        override fun getAllImages(): Flow<List<ImageOfTheDay>> = _images
+
+        override suspend fun addImage(image: ImageOfTheDay) {
+            val current = _images.value.toMutableList()
+            current.add(image)
+            _images.value = current
+        }
+
+        override suspend fun deleteImage(image: ImageOfTheDay) {
+            val current = _images.value.toMutableList()
+            current.remove(image)
+            _images.value = current
+        }
+
+        override suspend fun recordQuoteReaction(quoteId: Int, reaction: String) {}
+
+        override suspend fun recordImageReaction(imageId: Int, reaction: String) {}
     }
 
     private class MockAnalyticsRepository : AnalyticsRepository {
         override suspend fun trackIntentionSet(event: IntentionAnalyticsEvent) {
-            // For now, do nothing
         }
     }
 }

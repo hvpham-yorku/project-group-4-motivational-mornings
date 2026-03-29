@@ -7,10 +7,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
+import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -46,6 +48,8 @@ class ContentRepositoryIntegrationTest {
         defaultQuotes.forEach { text ->
             db.dailyContentDao().insertQuote(QuoteOfTheDay(text = text))
         }
+        db.dailyContentDao().insertImage(ImageOfTheDay(uid = 1, drawableResId = com.example.motivationalmornings.R.drawable.imageotd))
+        
         repository = RoomContentRepository(db.dailyContentDao())
     }
 
@@ -67,6 +71,13 @@ class ContentRepositoryIntegrationTest {
         assertEquals(defaultQuotes.size, quotes.size)
         val texts = quotes.map { it.text }
         defaultQuotes.forEach { assertTrue("Expected quote '$it' not found", it in texts) }
+    }
+
+    @Test
+    fun getImageOfTheDay_returnsPopulatedImage() = runTest {
+        val image = repository.getImageOfTheDay().first()
+        assertNotNull(image)
+        assertEquals(com.example.motivationalmornings.R.drawable.imageotd, image?.drawableResId)
     }
 
     @Test

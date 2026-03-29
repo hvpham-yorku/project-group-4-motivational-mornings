@@ -1,5 +1,6 @@
 package com.example.motivationalmornings
 
+import com.example.motivationalmornings.BusinessLogic.MainViewModel
 import com.example.motivationalmornings.Presentation.AppDestinations
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first

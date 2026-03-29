@@ -2,14 +2,15 @@ package com.example.motivationalmornings
 
 import com.example.motivationalmornings.Presentation.AppDestinations
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material.icons.filled.WbSunny
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class AppDestinationsTest {
+class AppDestinationTest {
 
     @Test
     fun appDestinations_hasCorrectNumberOfEntries() {
@@ -17,8 +18,8 @@ class AppDestinationsTest {
         // When: Getting all entries
         val entries = AppDestinations.entries
 
-        // Then: Should have exactly 4 destinations
-        assertEquals(4, entries.size)
+        // Then: Should have exactly 5 destinations
+        assertEquals(5, entries.size)
     }
 
     @Test
@@ -37,8 +38,8 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.DASHBOARD.icon
 
-        // Then: Icon should be DateRange icon
-        assertEquals(Icons.Default.DateRange, icon)
+        // Then: Icon should be BarChart icon
+        assertEquals(Icons.Default.BarChart, icon)
     }
 
     @Test
@@ -47,8 +48,8 @@ class AppDestinationsTest {
         // When: Getting label
         val label = AppDestinations.DAILY_CONTENT.label
 
-        // Then: Label should be "Daily Content"
-        assertEquals("Daily Content", label)
+        // Then: Label should be "Daily"
+        assertEquals("Daily", label)
     }
 
     @Test
@@ -57,8 +58,8 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.DAILY_CONTENT.icon
 
-        // Then: Icon should be Home icon
-        assertEquals(Icons.Default.Home, icon)
+        // Then: Icon should be WbSunny icon
+        assertEquals(Icons.Default.WbSunny, icon)
     }
 
     @Test
@@ -77,8 +78,8 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.AGGREGATOR.icon
 
-        // Then: Icon should be List icon
-        assertEquals(Icons.AutoMirrored.Filled.List, icon)
+        // Then: Icon should be Newspaper icon
+        assertEquals(Icons.Default.Newspaper, icon)
     }
 
     @Test
@@ -87,8 +88,8 @@ class AppDestinationsTest {
         // When: Getting label
         val label = AppDestinations.RSS_FEED.label
 
-        // Then: Label should be "RSS Feed"
-        assertEquals("RSS Feed", label)
+        // Then: Label should be "RSS"
+        assertEquals("RSS", label)
     }
 
     @Test
@@ -97,8 +98,28 @@ class AppDestinationsTest {
         // When: Getting icon
         val icon = AppDestinations.RSS_FEED.icon
 
-        // Then: Icon should be Favorite icon
-        assertEquals(Icons.Default.Favorite, icon)
+        // Then: Icon should be RssFeed icon
+        assertEquals(Icons.Default.RssFeed, icon)
+    }
+
+    @Test
+    fun weather_hasCorrectLabel() {
+        // Given: WEATHER destination
+        // When: Getting label
+        val label = AppDestinations.WEATHER.label
+
+        // Then: Label should be "Weather"
+        assertEquals("Weather", label)
+    }
+
+    @Test
+    fun weather_hasCorrectIcon() {
+        // Given: WEATHER destination
+        // When: Getting icon
+        val icon = AppDestinations.WEATHER.icon
+
+        // Then: Icon should be Cloud icon
+        assertEquals(Icons.Default.Cloud, icon)
     }
 
     @Test
@@ -158,6 +179,16 @@ class AppDestinationsTest {
 
         // Then: Should return RSS_FEED destination
         assertEquals(AppDestinations.RSS_FEED, destination)
+    }
+
+    @Test
+    fun valueOf_findsWeather() {
+        // Given: String "WEATHER"
+        // When: Getting enum by name
+        val destination = AppDestinations.valueOf("WEATHER")
+
+        // Then: Should return WEATHER destination
+        assertEquals(AppDestinations.WEATHER, destination)
     }
 
     @Test(expected = IllegalArgumentException::class)
