@@ -77,7 +77,12 @@ class DailyContentViewModel(
                 refreshWidgets()
 
                 // Track the analytics event
-                analytics.trackIntentionSet(intention, imageResId.value, weather)
+                val imageResId = imageOfTheDay.value?.drawableResId ?: 0
+                analytics.trackIntentionSet(intention, imageResId, weather)
+            }
+        }
+    }
+
     val allImages: StateFlow<List<ImageOfTheDay>> = contentRepository.getAllImages()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -85,16 +90,6 @@ class DailyContentViewModel(
     val quoteOfTheDay: StateFlow<QuoteOfTheDay?> = contentRepository.getQuoteOfTheDay()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     // ── Intentions ────────────────────────────────────────────────────────────
-
-    fun saveIntention(intention: String) {
-        if (intention.isNotBlank()) {
-            viewModelScope.launch {
-                contentRepository.saveIntention(intention)
-                refreshWidgets()
-                analytics.trackIntentionSet(intention, 0)
-            }
-        }
-    }
 
     fun saveReflection(uid: Int, reflection: String) {
         if (reflection.isNotBlank()) {

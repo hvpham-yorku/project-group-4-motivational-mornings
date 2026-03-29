@@ -54,7 +54,6 @@ import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
 import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import coil.compose.AsyncImage
-import com.example.motivationalmornings.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
@@ -93,7 +92,7 @@ fun DailyContent(
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        QuoteOfTheDay(
+        QuoteOfTheDayCard(
             quote = quote,
             onAddQuoteClick = { showAddQuoteDialog = true },
             onManageQuotesClick = { showManageQuotesDialog = true },
@@ -110,7 +109,7 @@ fun DailyContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Intentions(
+        IntentionsCard(
             intentions = savedIntentions,
             suggestedIntentions = intentionSuggestions,
             textFieldValue = textFieldValue,
@@ -269,7 +268,6 @@ fun ManageImagesDialog(
     onDeleteImage: (ImageOfTheDay) -> Unit,
     onAddImageFromUri: (Uri) -> Unit
 ) {
-    // Photo picker — opens the system image picker
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -332,7 +330,6 @@ private fun ImagePoolItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Thumbnail
         when {
             image.drawableResId != null -> {
                 Image(
@@ -352,7 +349,6 @@ private fun ImagePoolItem(
             }
         }
 
-        // Label
         val label = when {
             image.filePath != null -> File(image.filePath).name
             image.drawableResId != null -> "Built-in image #${image.uid}"
@@ -370,10 +366,10 @@ private fun ImagePoolItem(
     }
 }
 
-// ─── Quote of the Day card (unchanged from before) ────────────────────────────
+// ─── Quote of the Day card ────────────────────────────────────────────────────
 
 @Composable
-fun QuoteOfTheDay(
+fun QuoteOfTheDayCard(
     modifier: Modifier = Modifier,
     quote: String,
     onAddQuoteClick: () -> Unit,
@@ -501,217 +497,9 @@ fun ManageQuotesDialog(
 
 // ─── Intentions card ──────────────────────────────────────────────────────────
 
-@Composable
-fun Intentions(
-    modifier: Modifier = Modifier,
-    intentions: List<String>,
-    textFieldValue: String,
-    onIntentionChanged: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onViewArchiveClick: () -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Your Intentions", style = MaterialTheme.typography.headlineSmall)
-                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                    }
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        DropdownMenuItem(
-                            text = { Text("View archive") },
-                            onClick = { expanded = false; onViewArchiveClick() }
-                        )
-                    }
-                }
-            }
-
-            if (intentions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Saved Intentions:", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                LazyColumn(modifier = Modifier.fillMaxWidth().height(120.dp)) {
-                    items(intentions) { intention ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                            Text(
-                                text = intention,
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            } else {
-                Text("No intentions saved yet", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            Text("Set today's intention:", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = textFieldValue,
-                onValueChange = onIntentionChanged,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("What are your intentions today?") }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Button(onClick = onSubmit, enabled = textFieldValue.isNotBlank()) {
-                    Text("Add Intention")
-                }
-            }
-        }
-    }
-}
-
-// ─── Archive Intentions dialog ────────────────────────────────────────────────
-
-@Composable
-fun ArchiveIntentionsDialog(
-    intentions: List<Intention>,
-    onDismiss: () -> Unit,
-    onSaveReflection: (Int, String) -> Unit
-) {
-    var intentionToReflectOn by remember { mutableStateOf<Intention?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Intentions Archive") },
-        text = {
-            if (intentions.isEmpty()) {
-                Text("No intentions saved yet.")
-            } else {
-                LazyColumn(modifier = Modifier.height(300.dp)) {
-                    items(intentions, key = { it.uid }) { intention ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = if (intention.time != null) "${intention.date} at ${intention.time}" else intention.date,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        if (!intention.weather.isNullOrBlank()) {
-                                            Text(
-                                                text = "Weather: ${intention.weather}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.secondary
-                                            )
-                                        }
-                                    }
-                                    OutlinedButton(
-                                        onClick = { intentionToReflectOn = intention },
-                                        modifier = Modifier.wrapContentSize()
-                                    ) {
-                                        Text(if (intention.reflection.isNullOrBlank()) "Reflect" else "Edit Reflection")
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    intention.date,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                if (intention.reflection != null) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        "Reflection: ${intention.reflection}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                                TextButton(onClick = { intentionToReflectOn = intention }) {
-                                    Text(if (intention.reflection != null) "Edit reflection" else "Add reflection")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
-    )
-
-    intentionToReflectOn?.let { intention ->
-        AddReflectionDialog(
-            intention = intention,
-            onDismiss = { intentionToReflectOn = null },
-            onConfirm = { reflection ->
-                onSaveReflection(intention.uid, reflection)
-                intentionToReflectOn = null
-            }
-        )
-    }
-}
-
-@Composable
-fun AddReflectionDialog(
-    intention: Intention,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var reflectionText by remember { mutableStateOf(intention.reflection ?: "") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Reflect on Intention") },
-        text = {
-            Column {
-                Text("Intention: ${intention.text}", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = reflectionText,
-                    onValueChange = { reflectionText = it },
-                    label = { Text("How did it go?") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(reflectionText) },
-                enabled = reflectionText.isNotBlank()
-            ) { Text("Save Reflection") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
-
-@Composable
-fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Image of the day",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Image(
-                painter = painterResource(id = imageResId),
-                contentDescription = "Image of the day placeholder",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun Intentions(
+fun IntentionsCard(
     modifier: Modifier = Modifier,
     intentions: List<String>,
     suggestedIntentions: List<IntentionSuggestion> = emptyList(),
@@ -840,4 +628,116 @@ fun Intentions(
             }
         }
     }
+}
+
+// ─── Archive Intentions dialog ────────────────────────────────────────────────
+
+@Composable
+fun ArchiveIntentionsDialog(
+    intentions: List<Intention>,
+    onDismiss: () -> Unit,
+    onSaveReflection: (Int, String) -> Unit
+) {
+    var intentionToReflectOn by remember { mutableStateOf<Intention?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Intentions Archive") },
+        text = {
+            if (intentions.isEmpty()) {
+                Text("No intentions saved yet.")
+            } else {
+                LazyColumn(modifier = Modifier.height(300.dp)) {
+                    items(intentions, key = { it.uid }) { intention ->
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = if (intention.time != null) "${intention.date} at ${intention.time}" else intention.date,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (!intention.weather.isNullOrBlank()) {
+                                            Text(
+                                                text = "Weather: ${intention.weather}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    }
+                                    OutlinedButton(
+                                        onClick = { intentionToReflectOn = intention },
+                                        modifier = Modifier.wrapContentSize()
+                                    ) {
+                                        Text(if (intention.reflection.isNullOrBlank()) "Reflect" else "Edit Reflection")
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                if (intention.reflection != null) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "Reflection: ${intention.reflection}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                TextButton(onClick = { intentionToReflectOn = intention }) {
+                                    Text(if (intention.reflection != null) "Edit reflection" else "Add reflection")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
+
+    intentionToReflectOn?.let { intention ->
+        AddReflectionDialog(
+            intention = intention,
+            onDismiss = { intentionToReflectOn = null },
+            onConfirm = { reflection ->
+                onSaveReflection(intention.uid, reflection)
+                intentionToReflectOn = null
+            }
+        )
+    }
+}
+
+@Composable
+fun AddReflectionDialog(
+    intention: Intention,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var reflectionText by remember { mutableStateOf(intention.reflection ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reflect on Intention") },
+        text = {
+            Column {
+                Text("Intention: ${intention.text}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = reflectionText,
+                    onValueChange = { reflectionText = it },
+                    label = { Text("How did it go?") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(reflectionText) },
+                enabled = reflectionText.isNotBlank()
+            ) { Text("Save Reflection") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

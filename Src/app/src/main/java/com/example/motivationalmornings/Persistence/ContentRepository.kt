@@ -166,8 +166,6 @@ package com.example.motivationalmornings.Persistence
 //    }
 //}
 
-package com.example.motivationalmornings.data
-
 import com.example.motivationalmornings.Persistence.DailyContentDao
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
