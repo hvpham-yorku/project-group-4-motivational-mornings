@@ -53,11 +53,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
-import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import coil.compose.AsyncImage
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
+import com.example.motivationalmornings.Persistence.weather.WeatherInfo
 import java.io.File
 
 @Composable
@@ -65,8 +65,7 @@ fun DailyContent(
     modifier: Modifier = Modifier,
     viewModel: DailyContentViewModel = viewModel(
         factory = DailyContentViewModel.provideFactory(LocalContext.current)
-    ),
-    weatherViewModel: WeatherViewModel = viewModel()
+    )
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageOfTheDay by viewModel.imageOfTheDay.collectAsState()
@@ -74,12 +73,16 @@ fun DailyContent(
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
     val intentionSuggestions by viewModel.intentionSuggestions.collectAsState()
-    val weatherInfo by weatherViewModel.weather.collectAsState()
+    
+    val weatherInfo by viewModel.weather.collectAsState()
+    val city by viewModel.city.collectAsState()
+    val isWeatherLoading by viewModel.isLoading.collectAsState()
+    val weatherError by viewModel.error.collectAsState()
 
-    LaunchedEffect(weatherInfo) {
-        val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
-        viewModel.updateIntentionSuggestionContext(weatherString)
+    LaunchedEffect(Unit) {
+        viewModel.loadWeather()
     }
+
     val allImages by viewModel.allImages.collectAsState()
 
     var textFieldValue by remember { mutableStateOf("") }
@@ -125,7 +128,15 @@ fun DailyContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        WeatherScreen(vm = weatherViewModel)
+        
+        WeatherCard(
+            weather = weatherInfo,
+            city = city,
+            isLoading = isWeatherLoading,
+            error = weatherError,
+            onCityChange = { viewModel.setCity(it) },
+            onRefresh = { viewModel.loadWeather() }
+        )
     }
 
     if (showAddQuoteDialog) {
@@ -158,6 +169,68 @@ fun DailyContent(
             onDeleteImage = { viewModel.deleteImage(it) },
             onAddImageFromUri = { uri -> viewModel.addImageFromUri(uri) }
         )
+    }
+}
+
+@Composable
+fun WeatherCard(
+    weather: WeatherInfo?,
+    city: String,
+    isLoading: Boolean,
+    error: String?,
+    onCityChange: (String) -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Weather", style = MaterialTheme.typography.headlineSmall)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = city,
+                onValueChange = onCityChange,
+                label = { Text("City") },
+                placeholder = { Text("e.g., Toronto") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onRefresh,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isLoading) "Loading..." else "Search")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (error != null) {
+                Text(
+                    text = "Error: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (weather == null && isLoading) {
+                Text("Loading...", style = MaterialTheme.typography.bodyMedium)
+            } else if (weather != null) {
+                Text("Temp: ${weather.temperatureC} C", style = MaterialTheme.typography.bodyMedium)
+                Text("Wind: ${weather.windSpeedKmh} km/h", style = MaterialTheme.typography.bodyMedium)
+                Text("Condition: ${weather.condition}", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 }
 
@@ -704,15 +777,17 @@ fun ArchiveIntentionsDialog(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = intention.text,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                                 if (intention.reflection != null) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         "Reflection: ${intention.reflection}",
-                                        style = MaterialTheme.typography.bodySmall
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                }
-                                TextButton(onClick = { intentionToReflectOn = intention }) {
-                                    Text(if (intention.reflection != null) "Edit reflection" else "Add reflection")
                                 }
                             }
                         }

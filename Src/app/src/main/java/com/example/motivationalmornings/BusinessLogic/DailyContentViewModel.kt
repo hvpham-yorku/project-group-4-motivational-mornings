@@ -14,6 +14,9 @@ import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
+import com.example.motivationalmornings.Persistence.weather.OpenMeteoWeatherRepository
+import com.example.motivationalmornings.Persistence.weather.WeatherInfo
+import com.example.motivationalmornings.Persistence.weather.WeatherRepository
 import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
 import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.UUID
 
@@ -32,6 +36,7 @@ class DailyContentViewModel(
     private val contentRepository: ContentRepository,
     private val analytics: Analytics,
     private val appContext: Context,
+    private val weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
     private val refreshWidgets: suspend () -> Unit = { refreshMotivationalWidgets(appContext) },
 ) : ViewModel() {
 
@@ -51,18 +56,51 @@ class DailyContentViewModel(
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val suggestionWeatherContext = MutableStateFlow<String?>(null)
+    // ── Weather Logic ─────────────────────────────────────────────────────────
 
-    fun updateIntentionSuggestionContext(weatherDisplay: String?) {
-        suggestionWeatherContext.value = weatherDisplay
+    private val _weather = MutableStateFlow<WeatherInfo?>(null)
+    val weather: StateFlow<WeatherInfo?> = _weather.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _city = MutableStateFlow("Toronto")
+    val city: StateFlow<String> = _city.asStateFlow()
+
+    fun setCity(newCity: String) {
+        _city.value = newCity
+    }
+
+    fun loadWeather() {
+        val cityToSearch = _city.value.trim()
+        if (cityToSearch.isBlank()) {
+            _error.value = "Enter a city name"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                _weather.value = weatherRepository.getCurrentWeather(cityToSearch)
+            } catch (e: Exception) {
+                _error.value = "Failed to load weather"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     val intentionSuggestions: StateFlow<List<IntentionSuggestion>> = combine(
         contentRepository.getAllIntentions(),
         intentions,
-        suggestionWeatherContext
-    ) { all, todayTexts, weather ->
-        analytics.suggestIntentionsFromPatterns(all, weather, todayTexts)
+        weather
+    ) { all, todayTexts, weatherInfo ->
+        val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
+        analytics.suggestIntentionsFromPatterns(all, weatherString, todayTexts)
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
