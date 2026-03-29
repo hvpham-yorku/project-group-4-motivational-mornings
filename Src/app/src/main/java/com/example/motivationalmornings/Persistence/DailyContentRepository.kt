@@ -43,6 +43,12 @@ data class RssFeedUrl(
     @ColumnInfo(name = "url") val url: String,
 )
 
+@Entity(tableName = "aggregator_source_urls")
+data class AggregatorSourceUrl(
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+    @ColumnInfo(name = "url") val url: String,
+)
+
 // NEW ENTITIES
 @Entity(tableName = "quote_feedback")
 data class QuoteFeedback(
@@ -114,6 +120,16 @@ interface DailyContentDao {
     @Query("DELETE FROM rss_feed_urls WHERE url = :url")
     suspend fun deleteRssFeedUrl(url: String)
 
+    // Aggregator section URLs
+    @Query("SELECT url FROM aggregator_source_urls ORDER BY uid ASC")
+    fun getAggregatorSourceUrls(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAggregatorSourceUrl(source: AggregatorSourceUrl)
+
+    @Query("DELETE FROM aggregator_source_urls WHERE url = :url")
+    suspend fun deleteAggregatorSourceUrl(url: String)
+
     // Images of the day
     @Query("SELECT * FROM images_of_the_day ORDER BY uid ASC")
     fun getAllImages(): Flow<List<ImageOfTheDay>>
@@ -144,8 +160,16 @@ interface DailyContentDao {
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 @Database(
-    entities = [Intention::class, QuoteOfTheDay::class, RssFeedUrl::class, ImageOfTheDay::class, QuoteFeedback::class, ImageFeedback::class],
-    version = 5
+    entities = [
+        Intention::class,
+        QuoteOfTheDay::class,
+        RssFeedUrl::class,
+        AggregatorSourceUrl::class,
+        ImageOfTheDay::class,
+        QuoteFeedback::class,
+        ImageFeedback::class,
+    ],
+    version = 6
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyContentDao(): DailyContentDao
@@ -207,6 +231,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v5 → v6: aggregator saved section URLs
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS aggregator_source_urls " +
+                            "(uid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -214,7 +248,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "motivational_mornings_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
