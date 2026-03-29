@@ -1,9 +1,10 @@
 package com.example.motivationalmornings
 
-import com.example.motivationalmornings.analytics.Analytics
-import com.example.motivationalmornings.data.AnalyticsRepository
-import com.example.motivationalmornings.data.ContentRepository
-import com.example.motivationalmornings.data.IntentionAnalyticsEvent
+import com.example.motivationalmornings.BusinessLogic.Analytics
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.Persistence.AnalyticsRepository
+import com.example.motivationalmornings.Persistence.ContentRepository
+import com.example.motivationalmornings.Persistence.IntentionAnalyticsEvent
 import android.content.Context
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
@@ -21,12 +22,15 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @ExperimentalCoroutinesApi
 class DailyContentViewModelTest {
@@ -103,6 +107,16 @@ class DailyContentViewModelTest {
         advanceUntilIdle()
         assertEquals(1, mockRepository.savedIntentions.size)
         assertEquals("Read a book", mockRepository.savedIntentions[0])
+    }
+
+    @Test
+    fun saveIntention_savesWithTime() = runTest {
+        triggerStateFlows()
+        viewModel.saveIntention("Check time")
+        advanceUntilIdle()
+        val savedIntention = mockRepository.allIntentionsList[0]
+        assertNotNull("Saved intention should have a time", savedIntention.time)
+        assertTrue("Time should follow HH:mm format", savedIntention.time!!.matches(Regex("\\d{2}:\\d{2}")))
     }
 
     @Test
@@ -252,6 +266,7 @@ class DailyContentViewModelTest {
     // Mock ContentRepository for testing
     private class MockContentRepository : ContentRepository {
         val savedIntentions = mutableListOf<String>()
+        val allIntentionsList = mutableListOf<Intention>()
         private val _intentions = MutableStateFlow<List<String>>(emptyList())
         private val _allIntentions = MutableStateFlow<List<Intention>>(emptyList())
         private val _quotes = MutableStateFlow<List<QuoteOfTheDay>>(emptyList())
@@ -264,17 +279,28 @@ class DailyContentViewModelTest {
 
         override fun getAllIntentions(): Flow<List<Intention>> = _allIntentions
 
-        override suspend fun saveIntention(intention: String) {
+        override suspend fun saveIntention(intention: String, weather: String?) {
             savedIntentions.add(intention)
             val current = _intentions.value.toMutableList()
             current.add(0, intention)
             _intentions.value = current
-            val withMeta = _allIntentions.value.toMutableList()
-            withMeta.add(
-                0,
-                Intention(text = intention, date = LocalDate.now().toString()),
+            
+            val currentTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+            val newIntention = Intention(
+                text = intention, 
+                date = LocalDate.now().toString(), 
+                weather = weather,
+                time = currentTime
             )
+            allIntentionsList.add(0, newIntention)
+            
+            val withMeta = _allIntentions.value.toMutableList()
+            withMeta.add(0, newIntention)
             _allIntentions.value = withMeta
+        }
+
+        override suspend fun updateReflection(uid: Int, reflection: String) {
+            // Not needed for current tests
         }
 
         override suspend fun saveQuote(quote: String) {

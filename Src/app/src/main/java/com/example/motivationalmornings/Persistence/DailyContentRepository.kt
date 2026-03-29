@@ -164,7 +164,9 @@ data class Intention(
     @PrimaryKey(autoGenerate = true) val uid: Int = 0,
     @ColumnInfo(name = "text") val text: String,
     @ColumnInfo(name = "date") val date: String,
-    @ColumnInfo(name = "reflection") val reflection: String? = null
+    @ColumnInfo(name = "reflection") val reflection: String? = null,
+    @ColumnInfo(name = "weather") val weather: String? = null,
+    @ColumnInfo(name = "time") val time: String? = null
 )
 
 @Entity(tableName = "quotes")
@@ -336,6 +338,22 @@ abstract class AppDatabase : RoomDatabase() {
                             "image_id INTEGER NOT NULL, " +
                             "reaction TEXT NOT NULL, " +
                             "created_at TEXT NOT NULL)"
+                )
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE intentions ADD COLUMN weather TEXT"
+                )
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE intentions ADD COLUMN time TEXT"
                 )
             }
         }

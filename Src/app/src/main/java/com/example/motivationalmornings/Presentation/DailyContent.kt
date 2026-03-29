@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -34,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +50,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
+import com.example.motivationalmornings.BusinessLogic.WeatherViewModel
 import coil.compose.AsyncImage
 import com.example.motivationalmornings.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
@@ -58,13 +65,21 @@ fun DailyContent(
     modifier: Modifier = Modifier,
     viewModel: DailyContentViewModel = viewModel(
         factory = DailyContentViewModel.provideFactory(LocalContext.current)
-    )
+    ),
+    weatherViewModel: WeatherViewModel = viewModel()
 ) {
     val quote by viewModel.quote.collectAsState()
     val imageOfTheDay by viewModel.imageOfTheDay.collectAsState()
     val savedIntentions by viewModel.intentions.collectAsState()
     val allIntentions by viewModel.allIntentions.collectAsState()
     val allQuotes by viewModel.allQuotes.collectAsState()
+    val intentionSuggestions by viewModel.intentionSuggestions.collectAsState()
+    val weatherInfo by weatherViewModel.weather.collectAsState()
+
+    LaunchedEffect(weatherInfo) {
+        val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
+        viewModel.updateIntentionSuggestionContext(weatherString)
+    }
     val allImages by viewModel.allImages.collectAsState()
 
     var textFieldValue by remember { mutableStateOf("") }
@@ -97,17 +112,20 @@ fun DailyContent(
 
         Intentions(
             intentions = savedIntentions,
+            suggestedIntentions = intentionSuggestions,
             textFieldValue = textFieldValue,
             onIntentionChanged = { textFieldValue = it },
+            onSuggestionClick = { textFieldValue = it },
             onSubmit = {
-                viewModel.saveIntention(textFieldValue)
-                textFieldValue = ""
+                val weatherString = weatherInfo?.let { "${it.condition}, ${it.temperatureC}°C" }
+                viewModel.saveIntention(textFieldValue, weatherString)
+                textFieldValue = "" // Clear field after submit
             },
             onViewArchiveClick = { showArchiveIntentionsDialog = true }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        WeatherScreen()
+        WeatherScreen(vm = weatherViewModel)
     }
 
     if (showAddQuoteDialog) {
@@ -575,7 +593,33 @@ fun ArchiveIntentionsDialog(
                     items(intentions, key = { it.uid }) { intention ->
                         Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text(intention.text, style = MaterialTheme.typography.bodyMedium)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = if (intention.time != null) "${intention.date} at ${intention.time}" else intention.date,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (!intention.weather.isNullOrBlank()) {
+                                            Text(
+                                                text = "Weather: ${intention.weather}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    }
+                                    OutlinedButton(
+                                        onClick = { intentionToReflectOn = intention },
+                                        modifier = Modifier.wrapContentSize()
+                                    ) {
+                                        Text(if (intention.reflection.isNullOrBlank()) "Reflect" else "Edit Reflection")
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     intention.date,
                                     style = MaterialTheme.typography.bodySmall,
@@ -643,4 +687,157 @@ fun AddReflectionDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
+}
+
+@Composable
+fun ImageOfTheDay(modifier: Modifier = Modifier, imageResId: Int) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Image of the day",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = "Image of the day placeholder",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun Intentions(
+    modifier: Modifier = Modifier,
+    intentions: List<String>,
+    suggestedIntentions: List<IntentionSuggestion> = emptyList(),
+    textFieldValue: String,
+    onIntentionChanged: (String) -> Unit,
+    onSuggestionClick: (String) -> Unit = {},
+    onSubmit: () -> Unit,
+    onViewArchiveClick: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Your Intentions",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("View archive") },
+                            onClick = {
+                                expanded = false
+                                onViewArchiveClick()
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (intentions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Saved Intentions:",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                ) {
+                    items(intentions) { intention ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = intention,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            } else {
+                Text(
+                    text = "No intentions saved yet",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            Text(
+                text = "Set today's intention:",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (suggestedIntentions.isNotEmpty()) {
+                Text(
+                    text = "Suggestions from your patterns:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    suggestedIntentions.forEach { suggestion ->
+                        AssistChip(
+                            onClick = { onSuggestionClick(suggestion.intention) },
+                            label = {
+                                Text(
+                                    text = suggestion.explanation,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 2
+                                )
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = onIntentionChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("What are your intentions today?") }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = onSubmit,
+                    enabled = textFieldValue.isNotBlank()
+                ) {
+                    Text("Add Intention")
+                }
+            }
+        }
+    }
 }

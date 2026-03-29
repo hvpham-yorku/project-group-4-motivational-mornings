@@ -1,7 +1,7 @@
 package com.example.motivationalmornings
 
-import com.example.motivationalmornings.data.AggregatorArticle
-import com.example.motivationalmornings.data.AggregatorWebScraper
+import com.example.motivationalmornings.Persistence.AggregatorArticle
+import com.example.motivationalmornings.Persistence.AggregatorWebScraper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher

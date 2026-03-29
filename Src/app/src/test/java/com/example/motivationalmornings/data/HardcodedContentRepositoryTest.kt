@@ -1,5 +1,6 @@
 package com.example.motivationalmornings.data
 
+import com.example.motivationalmornings.Persistence.HardcodedContentRepository
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.first

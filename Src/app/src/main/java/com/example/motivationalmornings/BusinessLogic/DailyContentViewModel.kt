@@ -1,22 +1,25 @@
-package com.example.motivationalmornings
+package com.example.motivationalmornings.BusinessLogic
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.motivationalmornings.DatabaseConfig
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.ContentRepository
+import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
+import com.example.motivationalmornings.Persistence.HardcodedContentRepository
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
+import com.example.motivationalmornings.Persistence.RoomContentRepository
 import com.example.motivationalmornings.Presentation.refreshMotivationalWidgets
-import com.example.motivationalmornings.analytics.Analytics
-import com.example.motivationalmornings.data.ContentRepository
-import com.example.motivationalmornings.data.FakeAnalyticsRepository
-import com.example.motivationalmornings.data.HardcodedContentRepository
-import com.example.motivationalmornings.data.RoomContentRepository
+import com.example.motivationalmornings.R
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +51,33 @@ class DailyContentViewModel(
     val allQuotes: StateFlow<List<QuoteOfTheDay>> = contentRepository.getAllQuotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    private val suggestionWeatherContext = MutableStateFlow<String?>(null)
+
+    fun updateIntentionSuggestionContext(weatherDisplay: String?) {
+        suggestionWeatherContext.value = weatherDisplay
+    }
+
+    val intentionSuggestions: StateFlow<List<IntentionSuggestion>> = combine(
+        contentRepository.getAllIntentions(),
+        intentions,
+        suggestionWeatherContext
+    ) { all, todayTexts, weather ->
+        analytics.suggestIntentionsFromPatterns(all, weather, todayTexts)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
+
+    fun saveIntention(intention: String, weather: String? = null) {
+        if (intention.isNotBlank()) {
+            viewModelScope.launch {
+                // Save to repository for persistence
+                contentRepository.saveIntention(intention, weather)
+                refreshWidgets()
+
+                // Track the analytics event
+                analytics.trackIntentionSet(intention, imageResId.value, weather)
     val allImages: StateFlow<List<ImageOfTheDay>> = contentRepository.getAllImages()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
