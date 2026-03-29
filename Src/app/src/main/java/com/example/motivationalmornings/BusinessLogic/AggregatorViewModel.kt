@@ -10,6 +10,7 @@ import com.example.motivationalmornings.Persistence.AggregatorWebScraper
 import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.DailyContentDao
 import com.example.motivationalmornings.Persistence.DefaultAggregatorWebScraper
+import com.example.motivationalmornings.Persistence.TrackedStock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -22,6 +23,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+data class StockQuote(
+    val symbol: String,
+    val price: Double,
+    val change: Double,
+    val changePercent: Double
+)
 
 class AggregatorViewModel(
     private val scraper: AggregatorWebScraper = DefaultAggregatorWebScraper(),
@@ -52,6 +60,16 @@ class AggregatorViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // Stock Tracker States
+    private val _trackedStocks = MutableStateFlow<List<String>>(emptyList())
+    val trackedStocks: StateFlow<List<String>> = _trackedStocks.asStateFlow()
+
+    private val _stockQuotes = MutableStateFlow<List<StockQuote>>(emptyList())
+    val stockQuotes: StateFlow<List<StockQuote>> = _stockQuotes.asStateFlow()
+
+    private val _stockSymbolInput = MutableStateFlow("")
+    val stockSymbolInput: StateFlow<String> = _stockSymbolInput.asStateFlow()
+
     private val prefsName = "aggregator_prefs"
     private val keywordsKey = "keywords"
 
@@ -64,6 +82,14 @@ class AggregatorViewModel(
                         _subscribedSources.value = urls
                         reconcileSelection(urls)
                         refreshDisplayedArticles()
+                    }
+            }
+            viewModelScope.launch {
+                dao.getTrackedStocks()
+                    .catch { }
+                    .collect { stocks ->
+                        _trackedStocks.value = stocks
+                        refreshStockQuotes(stocks)
                     }
             }
         }
@@ -127,6 +153,14 @@ class AggregatorViewModel(
             if (urls.isEmpty()) return@launch
             scrapeUrlsIntoMap(urls)
         }
+        viewModelScope.launch {
+            val stocks = if (dailyContentDao != null) {
+                withContext(ioDispatcher) { dailyContentDao.getTrackedStocks().first() }
+            } else {
+                _trackedStocks.value
+            }
+            refreshStockQuotes(stocks)
+        }
     }
 
     fun selectSource(url: String) {
@@ -177,6 +211,62 @@ class AggregatorViewModel(
             _sourceUrl.value = ""
             scrapeUrlsIntoMap(listOf(url), showGlobalLoading = true)
         }
+    }
+
+    // Stock Actions
+    fun onStockSymbolInputChanged(symbol: String) {
+        _stockSymbolInput.value = symbol.uppercase()
+    }
+
+    fun addStock() {
+        val symbol = _stockSymbolInput.value.trim().uppercase()
+        if (symbol.isEmpty()) return
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                dailyContentDao?.insertTrackedStock(TrackedStock(symbol))
+            }
+            if (dailyContentDao == null) {
+                _trackedStocks.value = _trackedStocks.value + symbol
+            }
+            _stockSymbolInput.value = ""
+        }
+    }
+
+    fun removeStock(symbol: String) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                dailyContentDao?.deleteTrackedStock(symbol)
+            }
+            if (dailyContentDao == null) {
+                _trackedStocks.value = _trackedStocks.value.filter { it != symbol }
+            }
+        }
+    }
+
+    private suspend fun refreshStockQuotes(symbols: List<String>) {
+        if (symbols.isEmpty()) {
+            _stockQuotes.value = emptyList()
+            return
+        }
+        // Simulated stock data as real APIs require keys
+        val mockQuotes = symbols.map { symbol ->
+            val basePrice = when(symbol) {
+                "AAPL" -> 180.0
+                "GOOGL" -> 140.0
+                "MSFT" -> 370.0
+                "AMZN" -> 145.0
+                "TSLA" -> 240.0
+                else -> 100.0
+            }
+            val randomChange = (Math.random() - 0.5) * 5.0
+            StockQuote(
+                symbol = symbol,
+                price = basePrice + randomChange,
+                change = randomChange,
+                changePercent = (randomChange / basePrice) * 100.0
+            )
+        }
+        _stockQuotes.value = mockQuotes
     }
 
     /**

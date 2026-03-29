@@ -49,6 +49,11 @@ data class AggregatorSourceUrl(
     @ColumnInfo(name = "url") val url: String,
 )
 
+@Entity(tableName = "tracked_stocks")
+data class TrackedStock(
+    @PrimaryKey val symbol: String,
+)
+
 // NEW ENTITIES
 @Entity(tableName = "quote_feedback")
 data class QuoteFeedback(
@@ -130,6 +135,16 @@ interface DailyContentDao {
     @Query("DELETE FROM aggregator_source_urls WHERE url = :url")
     suspend fun deleteAggregatorSourceUrl(url: String)
 
+    // Stocks
+    @Query("SELECT symbol FROM tracked_stocks ORDER BY symbol ASC")
+    fun getTrackedStocks(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTrackedStock(stock: TrackedStock)
+
+    @Query("DELETE FROM tracked_stocks WHERE symbol = :symbol")
+    suspend fun deleteTrackedStock(symbol: String)
+
     // Images of the day
     @Query("SELECT * FROM images_of_the_day ORDER BY uid ASC")
     fun getAllImages(): Flow<List<ImageOfTheDay>>
@@ -165,11 +180,12 @@ interface DailyContentDao {
         QuoteOfTheDay::class,
         RssFeedUrl::class,
         AggregatorSourceUrl::class,
+        TrackedStock::class,
         ImageOfTheDay::class,
         QuoteFeedback::class,
         ImageFeedback::class,
     ],
-    version = 6
+    version = 7
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyContentDao(): DailyContentDao
@@ -241,6 +257,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v6 → v7: tracked stocks table
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS tracked_stocks " +
+                            "(symbol TEXT PRIMARY KEY NOT NULL)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -248,7 +274,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "motivational_mornings_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
@@ -282,6 +308,11 @@ abstract class AppDatabase : RoomDatabase() {
             )
             defaultQuotes.forEach { text -> dao.insertQuote(QuoteOfTheDay(text = text)) }
             seedImagesIfEmpty(dao)
+            
+            // Seed some default stocks
+            listOf("AAPL", "GOOGL", "MSFT", "AMZN", "TSLA").forEach {
+                dao.insertTrackedStock(TrackedStock(it))
+            }
         }
 
         /**

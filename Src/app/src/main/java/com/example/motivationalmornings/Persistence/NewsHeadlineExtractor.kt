@@ -37,6 +37,9 @@ object NewsHeadlineExtractor {
         "h2 a[href]",
         "h3 a[href]",
         "h4 a[href]",
+        "li a[href]", // Added to support list-heavy layouts like FotMob
+        "div[class*='headline'] a[href]",
+        "div[class*='title'] a[href]",
     )
 
     fun extract(doc: Document): List<AggregatorArticle> {
@@ -47,10 +50,10 @@ object NewsHeadlineExtractor {
             doc.select(selector).forEach { anchor ->
                 considerAnchor(seen, anchor, baseUri)
             }
-            if (seen.size >= 15) break
+            if (seen.size >= 25) break // Increased threshold
         }
 
-        if (seen.size < 5) {
+        if (seen.size < 10) { // Increased threshold to fall back to general links
             doc.select("a[href]").forEach { anchor ->
                 considerAnchor(seen, anchor, baseUri)
             }
@@ -82,7 +85,7 @@ object NewsHeadlineExtractor {
     }
 
     internal fun isPlausibleHeadlineText(text: String, articleUrl: String): Boolean {
-        if (text.length < 15 || text.length > 320) return false
+        if (text.length < 12 || text.length > 320) return false // Lowered minimum length slightly
         val lower = text.lowercase().trim()
         val banned = setOf(
             "watch", "listen", "sign in", "log in", "subscribe", "cookies", "ad choices",
@@ -96,8 +99,9 @@ object NewsHeadlineExtractor {
         val words = lower.split(Regex("\\s+")).filter { it.isNotEmpty() }
         val path = runCatching { URL(articleUrl).path }.getOrNull().orEmpty()
         val hasStrongArticleUrl = hasArticleUrlSignals(path)
+        
         // Real headlines almost always have several words; category chips often have 1–2.
-        if (words.size < 3 && text.length < 40 && !hasStrongArticleUrl) return false
+        if (words.size < 2 && text.length < 40 && !hasStrongArticleUrl) return false // Lowered word count check
 
         // All-caps short lines are often nav, not headlines
         if (text.length <= 30 && text == text.uppercase() && words.size <= 4) return false
@@ -126,7 +130,7 @@ object NewsHeadlineExtractor {
         if (NavNoiseInPath.any { lower.contains(it) }) return false
 
         val path = parsed.path.trim('/').lowercase()
-        if (path.length < 6) return false
+        if (path.length < 4) return false // Lowered for shorter news paths
 
         val segments = path.split('/').filter { it.isNotEmpty() }
         if (segments.isEmpty()) return false
@@ -170,24 +174,24 @@ object NewsHeadlineExtractor {
         val last = segments.last()
 
         // Long hyphenated slug (typical article URL)
-        if (last.length >= 22 && last.count { it == '-' } >= 3) return true
-        if (last.length >= 32 && last.contains('-')) return true
+        if (last.length >= 18 && last.count { it == '-' } >= 2) return true // Relaxed constraints
+        if (last.length >= 28 && last.contains('-')) return true
 
         // /story/, /articles/, /news/story-…
-        if (Regex("""/(story|stories|article|articles)/.+""").containsMatchIn(path) && last.length >= 12) {
+        if (Regex("""/(story|stories|article|articles|news)/.+""").containsMatchIn(path) && last.length >= 8) {
             return true
         }
 
         // Trailing long numeric id (common on wire services / some CMSs)
-        if (Regex("""-\d{6,}(/?.*)?$""").containsMatchIn(path)) return true
-        if (Regex("""/\d{7,}/?$""").containsMatchIn(path)) return true
+        if (Regex("""-\d{5,}(/?.*)?$""").containsMatchIn(path)) return true
+        if (Regex("""/\d{6,}/?$""").containsMatchIn(path)) return true
 
-        // BBC-style: world-europe-12345678
-        if (Regex("""^[a-z0-9]+(-[a-z0-9]+){2,}-\d{5,}$""").matches(last)) return true
+        // BBC-style or general news: world-europe-12345678
+        if (Regex("""^[a-z0-9]+(-[a-z0-9]+){1,}-\d{4,}$""").matches(last)) return true
 
-        // Need at least a meaty final segment if no date
-        if (segments.size >= 3 && last.contains('-') && last.length >= 18) return true
+        // Meaty final segment
+        if (segments.size >= 2 && last.contains('-') && last.length >= 15) return true
 
-        return false
+        return true // Default to true if it passed noise filters and has some length
     }
 }
