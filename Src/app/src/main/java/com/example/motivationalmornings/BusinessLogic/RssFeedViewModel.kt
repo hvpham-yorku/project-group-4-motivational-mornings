@@ -37,7 +37,7 @@ class RssFeedViewModel(
         dailyContentDao?.let { dao ->
             viewModelScope.launch {
                 dao.getRssFeedUrls()
-                    .catch { }
+                    .catch { /* Ignore DB errors on startup; UI shows empty list */ }
                     .collect { urls -> _subscribedFeeds.value = urls }
             }
         }
