@@ -8,11 +8,13 @@ import com.example.motivationalmornings.Persistence.AppDatabase
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
+import com.example.motivationalmornings.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -73,11 +75,51 @@ class ContentRepositoryIntegrationTest {
         defaultQuotes.forEach { assertTrue("Expected quote '$it' not found", it in texts) }
     }
 
+    /** Activity 2 manual T1.1 — Non-empty pool yields an image (no crash). */
     @Test
     fun getImageOfTheDay_returnsPopulatedImage() = runTest {
         val image = repository.getImageOfTheDay().first()
         assertNotNull(image)
-        assertEquals(com.example.motivationalmornings.R.drawable.imageotd, image?.drawableResId)
+        assertEquals(R.drawable.imageotd, image?.drawableResId)
+    }
+
+    /** Activity 2 manual T1.1 — empty pool: no crash at repository level (null image). */
+    @Test
+    fun t1_1_emptyImagePool_returnsNull() = runTest {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val emptyImagesDb = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        defaultQuotes.forEach { text ->
+            emptyImagesDb.dailyContentDao().insertQuote(QuoteOfTheDay(text = text))
+        }
+        val repo = RoomContentRepository(emptyImagesDb.dailyContentDao())
+        assertNull(repo.getImageOfTheDay().first())
+        emptyImagesDb.close()
+    }
+
+    /** Activity 2 manual T1.2 — deterministic index: epoch day modulo pool size. */
+    @Test
+    fun t1_2_imageOfTheDay_matchesEpochDayModuloPoolSize() = runTest {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val testDb = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        defaultQuotes.forEach { text ->
+            testDb.dailyContentDao().insertQuote(QuoteOfTheDay(text = text))
+        }
+        val drawableIds = listOf(R.drawable.imageotd, R.drawable.imageotd2, R.drawable.imageotd3)
+        drawableIds.forEachIndexed { i, resId ->
+            testDb.dailyContentDao().insertImage(ImageOfTheDay(uid = i + 1, drawableResId = resId))
+        }
+        val repo = RoomContentRepository(testDb.dailyContentDao())
+        val sorted = repo.getAllImages().first { it.size == 3 }.sortedBy { it.uid }
+        val expectedIndex = (LocalDate.now().toEpochDay() % sorted.size).toInt()
+        val expected = sorted[expectedIndex]
+        val actual = repo.getImageOfTheDay().first()
+        assertEquals(expected.uid, actual?.uid)
+        assertEquals(expected.drawableResId, actual?.drawableResId)
+        testDb.close()
     }
 
     @Test

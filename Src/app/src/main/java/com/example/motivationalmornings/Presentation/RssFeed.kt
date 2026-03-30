@@ -86,7 +86,7 @@ fun RssFeedScreen(
                     ) {
                         SuggestionChip(
                             onClick = { viewModel.loadFeed(feedUrl) },
-                            label = { Text(feedUrl.take(20) + if (feedUrl.length > 20) "..." else "") }
+                            label = { Text(feedUrl.truncateForChipLabel()) }
                         )
                         IconButton(
                             onClick = { viewModel.unsubscribeFromFeed(feedUrl) },
@@ -103,6 +103,15 @@ fun RssFeedScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (subscribedFeeds.isEmpty()) {
+            Text(
+                text = "No feeds subscribed yet. Enter a valid RSS URL above and tap Subscribe.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
+import com.example.motivationalmornings.Persistence.ContentReactions
 import com.example.motivationalmornings.BusinessLogic.IntentionSuggestion
 import coil.compose.AsyncImage
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
@@ -96,6 +97,8 @@ fun DailyContent(
     }
 
     val allImages by viewModel.allImages.collectAsState()
+    val quoteReaction by viewModel.quoteReaction.collectAsState()
+    val imageReaction by viewModel.imageReaction.collectAsState()
 
     var textFieldValue by remember { mutableStateOf("") }
     var showAddQuoteDialog by remember { mutableStateOf(false) }
@@ -120,6 +123,7 @@ fun DailyContent(
 
         QuoteOfTheDayCard(
             quote = quote,
+            quoteReaction = quoteReaction,
             onAddQuoteClick = { showAddQuoteDialog = true },
             onManageQuotesClick = { showManageQuotesDialog = true },
             onLikeClick = { viewModel.likeQuote() },
@@ -129,6 +133,7 @@ fun DailyContent(
 
         ImageOfTheDayCard(
             image = imageOfTheDay,
+            imageReaction = imageReaction,
             onManageImagesClick = { showManageImagesDialog = true },
             onLikeClick = { viewModel.likeImage() },
             onDislikeClick = { viewModel.dislikeImage() }
@@ -337,6 +342,7 @@ fun WeatherCard(
 @Composable
 fun ImageOfTheDayCard(
     image: ImageOfTheDay?,
+    imageReaction: String?,
     onManageImagesClick: () -> Unit,
     onLikeClick: () -> Unit,
     onDislikeClick: () -> Unit,
@@ -418,18 +424,15 @@ fun ImageOfTheDayCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
-                    onClick = onLikeClick,
-                    enabled = image != null
-                ) {
-                    Text("Like")
+                if (imageReaction == ContentReactions.LIKE) {
+                    Button(onClick = onLikeClick, enabled = image != null) { Text("Like") }
+                } else {
+                    OutlinedButton(onClick = onLikeClick, enabled = image != null) { Text("Like") }
                 }
-
-                OutlinedButton(
-                    onClick = onDislikeClick,
-                    enabled = image != null
-                ) {
-                    Text("Dislike")
+                if (imageReaction == ContentReactions.DISLIKE) {
+                    Button(onClick = onDislikeClick, enabled = image != null) { Text("Dislike") }
+                } else {
+                    OutlinedButton(onClick = onDislikeClick, enabled = image != null) { Text("Dislike") }
                 }
             }
         }
@@ -549,6 +552,7 @@ private fun ImagePoolItem(
 fun QuoteOfTheDayCard(
     modifier: Modifier = Modifier,
     quote: String,
+    quoteReaction: String?,
     onAddQuoteClick: () -> Unit,
     onManageQuotesClick: () -> Unit,
     onLikeClick: () -> Unit,
@@ -599,12 +603,15 @@ fun QuoteOfTheDayCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = onLikeClick) {
-                    Text("Like")
+                if (quoteReaction == ContentReactions.LIKE) {
+                    Button(onClick = onLikeClick) { Text("Like") }
+                } else {
+                    OutlinedButton(onClick = onLikeClick) { Text("Like") }
                 }
-
-                OutlinedButton(onClick = onDislikeClick) {
-                    Text("Dislike")
+                if (quoteReaction == ContentReactions.DISLIKE) {
+                    Button(onClick = onDislikeClick) { Text("Dislike") }
+                } else {
+                    OutlinedButton(onClick = onDislikeClick) { Text("Dislike") }
                 }
             }
         }

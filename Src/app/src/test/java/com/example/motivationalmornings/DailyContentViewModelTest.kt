@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.motivationalmornings.BusinessLogic.Analytics
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.AnalyticsRepository
+import com.example.motivationalmornings.Persistence.ContentReactions
 import com.example.motivationalmornings.Persistence.ContentRepository
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.Intention
@@ -13,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -147,6 +149,44 @@ class DailyContentViewModelTest {
         assertTrue(quotesAfter.none { it.uid == quoteToDelete.uid })
     }
 
+    /** Activity 2 manual T6.1 — Like quote (ViewModel → repository). */
+    @Test
+    fun t6_1_likeQuote_recordsLikeOnRepository() = runTest {
+        triggerStateFlows()
+        viewModel.likeQuote()
+        advanceUntilIdle()
+        assertEquals(ContentReactions.LIKE, mockRepository.lastQuoteReaction)
+    }
+
+    /** Activity 2 manual T6.2 — Dislike quote. */
+    @Test
+    fun t6_2_dislikeQuote_recordsDislikeOnRepository() = runTest {
+        triggerStateFlows()
+        viewModel.dislikeQuote()
+        advanceUntilIdle()
+        assertEquals(ContentReactions.DISLIKE, mockRepository.lastQuoteReaction)
+    }
+
+    /** Activity 2 manual T6.3 — Latest reaction wins. */
+    @Test
+    fun t6_3_toggleLikeThenDislike_keepsDislikeOnly() = runTest {
+        triggerStateFlows()
+        viewModel.likeQuote()
+        advanceUntilIdle()
+        viewModel.dislikeQuote()
+        advanceUntilIdle()
+        assertEquals(ContentReactions.DISLIKE, mockRepository.lastQuoteReaction)
+    }
+
+    /** Image like path (manual T6.4 also requires DB persistence; see Android integration test). */
+    @Test
+    fun likeImage_recordsLikeOnRepository() = runTest {
+        triggerStateFlows()
+        viewModel.likeImage()
+        advanceUntilIdle()
+        assertEquals(ContentReactions.LIKE, mockRepository.lastImageReaction)
+    }
+
     // Mock ContentRepository for testing
     private class MockContentRepository : ContentRepository {
         val savedIntentions = mutableListOf<String>()
@@ -218,9 +258,26 @@ class DailyContentViewModelTest {
             _images.value = current
         }
 
-        override suspend fun recordQuoteReaction(quoteId: Int, reaction: String) {}
+        private val _quoteReaction = MutableStateFlow<String?>(null)
+        private val _imageReaction = MutableStateFlow<String?>(null)
 
-        override suspend fun recordImageReaction(imageId: Int, reaction: String) {}
+        /** Latest reaction passed to [recordQuoteReaction] (mirrors DB in integration tests). */
+        val lastQuoteReaction: String? get() = _quoteReaction.value
+
+        /** Latest reaction passed to [recordImageReaction]. */
+        val lastImageReaction: String? get() = _imageReaction.value
+
+        override suspend fun recordQuoteReaction(quoteId: Int, reaction: String) {
+            _quoteReaction.value = reaction
+        }
+
+        override suspend fun recordImageReaction(imageId: Int, reaction: String) {
+            _imageReaction.value = reaction
+        }
+
+        override fun observeQuoteReaction(): Flow<String?> = _quoteReaction.asStateFlow()
+
+        override fun observeImageReaction(): Flow<String?> = _imageReaction.asStateFlow()
     }
 
     private class MockAnalyticsRepository : AnalyticsRepository {

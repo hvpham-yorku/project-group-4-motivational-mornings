@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.motivationalmornings.BusinessLogic.Analytics
 import com.example.motivationalmornings.BusinessLogic.DailyContentViewModel
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.ContentReactions
 import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
 import com.example.motivationalmornings.Persistence.ImageOfTheDay
 import com.example.motivationalmornings.Persistence.QuoteOfTheDay
@@ -20,12 +21,12 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -123,5 +124,59 @@ class DailyContentIntegrationTest {
 
         val dbQuotes = db.dailyContentDao().getAllQuotes().first()
         assertTrue("Quote should be removed from DB", dbQuotes.none { it.uid == toDelete.uid })
+    }
+
+    /** Activity 2 manual T6.1 — Like quote; DB holds LIKE for that quote. */
+    @Test
+    fun t6_1_likeQuote_persistsSingleLikeRowInDatabase() = runTest(testDispatcher) {
+        val quote = viewModel.quoteOfTheDay.first { it != null }
+        viewModel.likeQuote()
+        advanceUntilIdle()
+        val rows = db.dailyContentDao().getAllQuoteFeedback().first()
+        assertEquals(1, rows.size)
+        assertEquals(quote!!.uid, rows[0].quoteId)
+        assertEquals(ContentReactions.LIKE, rows[0].reaction)
+    }
+
+    /** Activity 2 manual T6.2 — Dislike quote. */
+    @Test
+    fun t6_2_dislikeQuote_persistsDislikeInDatabase() = runTest(testDispatcher) {
+        viewModel.quoteOfTheDay.first { it != null }
+        viewModel.dislikeQuote()
+        advanceUntilIdle()
+        val rows = db.dailyContentDao().getAllQuoteFeedback().first()
+        assertEquals(1, rows.size)
+        assertEquals(ContentReactions.DISLIKE, rows[0].reaction)
+    }
+
+    /** Activity 2 manual T6.3 — Only latest reaction row for that quote. */
+    @Test
+    fun t6_3_toggleQuoteReaction_keepsOnlyLatestRowInDatabase() = runTest(testDispatcher) {
+        viewModel.quoteOfTheDay.first { it != null }
+        viewModel.likeQuote()
+        advanceUntilIdle()
+        viewModel.dislikeQuote()
+        advanceUntilIdle()
+        val rows = db.dailyContentDao().getAllQuoteFeedback().first()
+        assertEquals(1, rows.size)
+        assertEquals(ContentReactions.DISLIKE, rows[0].reaction)
+    }
+
+    /** Activity 2 manual T6.4 — Preference survives a new ViewModel (same DB) as after process death. */
+    @Test
+    fun t6_4_imageLikePersistsForNewViewModelInstance() = runTest(testDispatcher) {
+        val image = viewModel.imageOfTheDay.first { it != null }
+        viewModel.likeImage()
+        advanceUntilIdle()
+        val feedbackRows = db.dailyContentDao().getAllImageFeedback().first()
+        assertEquals(1, feedbackRows.size)
+        assertEquals(image!!.uid, feedbackRows[0].imageId)
+        assertEquals(ContentReactions.LIKE, feedbackRows[0].reaction)
+
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val repository2 = RoomContentRepository(db.dailyContentDao())
+        val vm2 = DailyContentViewModel(repository2, Analytics(FakeAnalyticsRepository()), context)
+        val reaction = vm2.imageReaction.first { it != null }
+        assertEquals(ContentReactions.LIKE, reaction)
     }
 }
