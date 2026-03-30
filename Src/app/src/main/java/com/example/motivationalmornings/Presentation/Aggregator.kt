@@ -162,9 +162,7 @@ fun AggregatorScreen(
                             SuggestionChip(
                                 onClick = { viewModel.selectSource(url) },
                                 label = {
-                                    Text(
-                                        url.take(20) + if (url.length > 20) "..." else "",
-                                    )
+                                    Text(url.truncateForChipLabel())
                                 },
                             )
                             IconButton(
@@ -211,6 +209,17 @@ fun AggregatorScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (showNoKeywordMatches) {
+            item {
+                Text(
+                    text = "No articles match your keywords. Try different keywords or clear the filter.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
         }
 
         items(filteredArticles, key = { it.url }) { article ->

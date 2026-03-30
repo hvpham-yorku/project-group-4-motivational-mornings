@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.motivationalmornings.DatabaseConfig
 import com.example.motivationalmornings.Persistence.AppDatabase
+import com.example.motivationalmornings.Persistence.ContentReactions
 import com.example.motivationalmornings.Persistence.ContentRepository
 import com.example.motivationalmornings.Persistence.FakeAnalyticsRepository
 import com.example.motivationalmornings.Persistence.HardcodedContentRepository
@@ -124,9 +125,14 @@ class DailyContentViewModel(
     val allImages: StateFlow<List<ImageOfTheDay>> = contentRepository.getAllImages()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    //new addition
     val quoteOfTheDay: StateFlow<QuoteOfTheDay?> = contentRepository.getQuoteOfTheDay()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val quoteReaction: StateFlow<String?> = contentRepository.observeQuoteReaction()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val imageReaction: StateFlow<String?> = contentRepository.observeImageReaction()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // ── Notification Settings ─────────────────────────────────────────────────
 
@@ -208,35 +214,31 @@ class DailyContentViewModel(
         }
     }
 
-    // NEW FUNCTIONS
     fun likeQuote() {
-        val currentQuote = quoteOfTheDay.value
-        println("QUOTE OF THE DAY = $currentQuote")
-        if (currentQuote == null) return
-
+        val currentQuote = quoteOfTheDay.value ?: return
         viewModelScope.launch {
-            contentRepository.recordQuoteReaction(currentQuote.uid, "LIKE")
+            contentRepository.recordQuoteReaction(currentQuote.uid, ContentReactions.LIKE)
         }
     }
 
     fun dislikeQuote() {
         val currentQuote = quoteOfTheDay.value ?: return
         viewModelScope.launch {
-            contentRepository.recordQuoteReaction(currentQuote.uid, "DISLIKE")
+            contentRepository.recordQuoteReaction(currentQuote.uid, ContentReactions.DISLIKE)
         }
     }
 
     fun likeImage() {
         val currentImage = imageOfTheDay.value ?: return
         viewModelScope.launch {
-            contentRepository.recordImageReaction(currentImage.uid, "LIKE")
+            contentRepository.recordImageReaction(currentImage.uid, ContentReactions.LIKE)
         }
     }
 
     fun dislikeImage() {
         val currentImage = imageOfTheDay.value ?: return
         viewModelScope.launch {
-            contentRepository.recordImageReaction(currentImage.uid, "DISLIKE")
+            contentRepository.recordImageReaction(currentImage.uid, ContentReactions.DISLIKE)
         }
     }
 

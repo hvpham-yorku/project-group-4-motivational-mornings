@@ -165,6 +165,18 @@ interface DailyContentDao {
     @Insert
     suspend fun insertImageFeedback(feedback: ImageFeedback)
 
+    @Query("DELETE FROM quote_feedback WHERE quote_id = :quoteId")
+    suspend fun clearQuoteFeedbackForQuote(quoteId: Int)
+
+    @Query("DELETE FROM image_feedback WHERE image_id = :imageId")
+    suspend fun clearImageFeedbackForImage(imageId: Int)
+
+    @Query("SELECT reaction FROM quote_feedback WHERE quote_id = :quoteId ORDER BY uid DESC LIMIT 1")
+    fun observeLatestQuoteReaction(quoteId: Int): Flow<String?>
+
+    @Query("SELECT reaction FROM image_feedback WHERE image_id = :imageId ORDER BY uid DESC LIMIT 1")
+    fun observeLatestImageReaction(imageId: Int): Flow<String?>
+
     @Query("SELECT * FROM quote_feedback ORDER BY uid DESC")
     fun getAllQuoteFeedback(): Flow<List<QuoteFeedback>>
 
