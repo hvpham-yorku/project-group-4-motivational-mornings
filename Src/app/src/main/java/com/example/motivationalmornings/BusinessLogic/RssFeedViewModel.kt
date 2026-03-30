@@ -79,7 +79,6 @@ class RssFeedViewModel(
     }
 
     companion object {
-        private const val DEFAULT_FEED_URL = "https://example.com/feed"
 
         fun provideFactory(context: Context): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
