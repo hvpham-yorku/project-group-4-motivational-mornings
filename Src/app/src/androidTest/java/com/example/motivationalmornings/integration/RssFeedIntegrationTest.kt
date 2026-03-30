@@ -10,6 +10,7 @@ import com.example.motivationalmornings.Persistence.RssItem
 import com.example.motivationalmornings.Persistence.RssRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -52,6 +53,8 @@ class RssFeedIntegrationTest {
         val context: Context = ApplicationProvider.getApplicationContext()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(testDispatcher.asExecutor())
+            .setTransactionExecutor(testDispatcher.asExecutor())
             .build()
         
         viewModel = RssFeedViewModel(
@@ -108,7 +111,7 @@ class RssFeedIntegrationTest {
         assertTrue("URL should be removed from subscribed feeds", !subscribed.contains(testUrl))
 
         // Verify it's removed from database
-        val dbUrls = db.dailyContentDao().getRssFeedUrls().first()
+        val dbUrls = db.dailyContentDao().getRssFeedUrls().first { !it.contains(testUrl) }
         assertTrue("URL should be removed from DB", !dbUrls.contains(testUrl))
     }
 
@@ -131,11 +134,16 @@ class RssFeedIntegrationTest {
         viewModel.onFeedUrlChanged(urlA)
         viewModel.subscribeToFeed()
         advanceUntilIdle()
-        assertEquals("Feed A Headline", viewModel.rssItems.value[0].title)
+        
+        // Wait for items to be loaded into state
+        val itemsA = viewModel.rssItems.first { it.isNotEmpty() && it[0].title == "Feed A Headline" }
+        assertEquals("Feed A Headline", itemsA[0].title)
 
         viewModel.loadFeed(urlB)
         advanceUntilIdle()
-        assertEquals("Feed B Headline", viewModel.rssItems.value[0].title)
+        
+        val itemsB = viewModel.rssItems.first { it.isNotEmpty() && it[0].title == "Feed B Headline" }
+        assertEquals("Feed B Headline", itemsB[0].title)
     }
 
     /** Activity 2 manual T3.3 — No subscriptions: subscribed list empty (empty-state copy is UI-tested). */
@@ -155,10 +163,18 @@ class RssFeedIntegrationTest {
     @Test
     fun t3_4_invalidOrUnknownUrl_returnsEmptyItems() = runTest(testDispatcher) {
         val badUrl = "https://invalid-feed.example/notfound.xml"
+        
+        // First ensure we have some items from another feed so we can see them clearing
+        viewModel.loadFeed("https://test.com/rss")
+        viewModel.rssItems.first { it.isNotEmpty() }
+        
         viewModel.onFeedUrlChanged(badUrl)
         viewModel.subscribeToFeed()
         advanceUntilIdle()
-        assertTrue(viewModel.rssItems.value.isEmpty())
+        
+        // Wait for items to be cleared/empty
+        val items = viewModel.rssItems.first { it.isEmpty() }
+        assertTrue(items.isEmpty())
         assertTrue(viewModel.subscribedFeeds.value.contains(badUrl))
     }
 
@@ -173,7 +189,8 @@ class RssFeedIntegrationTest {
         viewModel.onFeedUrlChanged(u2)
         viewModel.subscribeToFeed()
         advanceUntilIdle()
-        val fromDb = db.dailyContentDao().getRssFeedUrls().first()
+        
+        val fromDb = db.dailyContentDao().getRssFeedUrls().first { it.size == 2 }
         assertEquals(2, fromDb.size)
         assertEquals(setOf(u1, u2), viewModel.subscribedFeeds.value.toSet())
     }
@@ -189,9 +206,14 @@ class RssFeedIntegrationTest {
         viewModel.onFeedUrlChanged(u2)
         viewModel.subscribeToFeed()
         advanceUntilIdle()
+        
+        // Ensure both are there
+        viewModel.subscribedFeeds.first { it.size == 2 }
+        
         viewModel.unsubscribeFromFeed(u1)
         advanceUntilIdle()
-        val fromDb = db.dailyContentDao().getRssFeedUrls().first()
+        
+        val fromDb = db.dailyContentDao().getRssFeedUrls().first { it.size == 1 }
         assertEquals(1, fromDb.size)
         assertTrue(fromDb.contains(u2))
         assertTrue(u1 !in viewModel.subscribedFeeds.value)
@@ -204,9 +226,14 @@ class RssFeedIntegrationTest {
         viewModel.onFeedUrlChanged(url)
         viewModel.subscribeToFeed()
         advanceUntilIdle()
+        
+        viewModel.subscribedFeeds.first { it.isNotEmpty() }
+        
         viewModel.unsubscribeFromFeed(url)
         advanceUntilIdle()
-        assertTrue(db.dailyContentDao().getRssFeedUrls().first().isEmpty())
+        
+        val fromDb = db.dailyContentDao().getRssFeedUrls().first { it.isEmpty() }
+        assertTrue(fromDb.isEmpty())
         assertTrue(viewModel.subscribedFeeds.value.isEmpty())
     }
 }

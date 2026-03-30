@@ -14,6 +14,7 @@ import com.example.motivationalmornings.Persistence.QuoteOfTheDay
 import com.example.motivationalmornings.Persistence.RoomContentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -45,11 +46,15 @@ class DailyContentIntegrationTest {
     )
 
     @Before
-    fun setup() = runTest {
+    fun setup() = runTest(testDispatcher) {
         Dispatchers.setMain(testDispatcher)
         val context: Context = ApplicationProvider.getApplicationContext()
+        
+        // Configure Room to use the test dispatcher so advanceUntilIdle() waits for DB operations
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(testDispatcher.asExecutor())
+            .setTransactionExecutor(testDispatcher.asExecutor())
             .build()
         
         // Populate with some default data
@@ -61,7 +66,11 @@ class DailyContentIntegrationTest {
         val repository = RoomContentRepository(db.dailyContentDao())
         val analytics = Analytics(FakeAnalyticsRepository())
         
-        viewModel = DailyContentViewModel(repository, analytics, context)
+        // Pass a no-op refreshWidgets to avoid background work that might outlive the test
+        // and cause "connection is closed" errors during tearDown.
+        viewModel = DailyContentViewModel(repository, analytics, context, refreshWidgets = {})
+        
+        advanceUntilIdle()
     }
 
     @After
@@ -129,9 +138,13 @@ class DailyContentIntegrationTest {
     /** Activity 2 manual T6.1 — Like quote; DB holds LIKE for that quote. */
     @Test
     fun t6_1_likeQuote_persistsSingleLikeRowInDatabase() = runTest(testDispatcher) {
-        val quote = viewModel.quoteOfTheDay.first { it != null }
+        viewModel.quoteOfTheDay.first { it != null }
+        advanceUntilIdle() // Ensure StateFlow.value is updated
+        val quote = viewModel.quoteOfTheDay.value
+        
         viewModel.likeQuote()
         advanceUntilIdle()
+        
         val rows = db.dailyContentDao().getAllQuoteFeedback().first()
         assertEquals(1, rows.size)
         assertEquals(quote!!.uid, rows[0].quoteId)
@@ -142,8 +155,11 @@ class DailyContentIntegrationTest {
     @Test
     fun t6_2_dislikeQuote_persistsDislikeInDatabase() = runTest(testDispatcher) {
         viewModel.quoteOfTheDay.first { it != null }
+        advanceUntilIdle() // Ensure StateFlow.value is updated
+        
         viewModel.dislikeQuote()
         advanceUntilIdle()
+        
         val rows = db.dailyContentDao().getAllQuoteFeedback().first()
         assertEquals(1, rows.size)
         assertEquals(ContentReactions.DISLIKE, rows[0].reaction)
@@ -153,10 +169,13 @@ class DailyContentIntegrationTest {
     @Test
     fun t6_3_toggleQuoteReaction_keepsOnlyLatestRowInDatabase() = runTest(testDispatcher) {
         viewModel.quoteOfTheDay.first { it != null }
+        advanceUntilIdle() // Ensure StateFlow.value is updated
+        
         viewModel.likeQuote()
         advanceUntilIdle()
         viewModel.dislikeQuote()
         advanceUntilIdle()
+        
         val rows = db.dailyContentDao().getAllQuoteFeedback().first()
         assertEquals(1, rows.size)
         assertEquals(ContentReactions.DISLIKE, rows[0].reaction)
@@ -165,9 +184,13 @@ class DailyContentIntegrationTest {
     /** Activity 2 manual T6.4 — Preference survives a new ViewModel (same DB) as after process death. */
     @Test
     fun t6_4_imageLikePersistsForNewViewModelInstance() = runTest(testDispatcher) {
-        val image = viewModel.imageOfTheDay.first { it != null }
+        viewModel.imageOfTheDay.first { it != null }
+        advanceUntilIdle() // Ensure StateFlow.value is updated
+        val image = viewModel.imageOfTheDay.value
+        
         viewModel.likeImage()
         advanceUntilIdle()
+        
         val feedbackRows = db.dailyContentDao().getAllImageFeedback().first()
         assertEquals(1, feedbackRows.size)
         assertEquals(image!!.uid, feedbackRows[0].imageId)
@@ -175,7 +198,8 @@ class DailyContentIntegrationTest {
 
         val context: Context = ApplicationProvider.getApplicationContext()
         val repository2 = RoomContentRepository(db.dailyContentDao())
-        val vm2 = DailyContentViewModel(repository2, Analytics(FakeAnalyticsRepository()), context)
+        val vm2 = DailyContentViewModel(repository2, Analytics(FakeAnalyticsRepository()), context, refreshWidgets = {})
+
         val reaction = vm2.imageReaction.first { it != null }
         assertEquals(ContentReactions.LIKE, reaction)
     }
