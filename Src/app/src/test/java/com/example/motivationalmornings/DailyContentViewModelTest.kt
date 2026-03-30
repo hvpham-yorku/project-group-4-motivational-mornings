@@ -34,6 +34,12 @@ import org.mockito.Mockito.`when`
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.map
+
+data class RecordedReaction(
+    val id: Int,
+    val reaction: String
+)
 
 @ExperimentalCoroutinesApi
 class DailyContentViewModelTest {
@@ -185,6 +191,14 @@ class DailyContentViewModelTest {
         viewModel.likeImage()
         advanceUntilIdle()
         assertEquals(ContentReactions.LIKE, mockRepository.lastImageReaction)
+    }
+
+    @Test
+    fun dislikeImage_recordsDislikeOnRepository() = runTest {
+        triggerStateFlows()
+        viewModel.dislikeImage()
+        advanceUntilIdle()
+        assertEquals(ContentReactions.DISLIKE, mockRepository.lastImageReaction)
     }
 
     // Mock ContentRepository for testing

@@ -95,6 +95,24 @@ class AggregatorViewModelTest {
         assertTrue(vm.articles.value.isEmpty())
         assertEquals("network problem", vm.errorMessage.value)
     }
+
+    @Test
+    fun onSourceUrlChanged_clearsPreviousErrorMessage() = runTest {
+        val vm = AggregatorViewModel(
+            FakeAggregatorWebScraper(Result.failure(Exception("network problem")))
+        )
+
+        vm.onSourceUrlChanged("https://example.com/world")
+        vm.loadHeadlines()
+        advanceUntilIdle()
+        assertEquals("network problem", vm.errorMessage.value)
+
+        vm.onSourceUrlChanged("https://example.com/updated")
+
+        assertNull(vm.errorMessage.value)
+        assertEquals("https://example.com/updated", vm.sourceUrl.value)
+    }
+
 }
 
 private class FakeAggregatorWebScraper(
